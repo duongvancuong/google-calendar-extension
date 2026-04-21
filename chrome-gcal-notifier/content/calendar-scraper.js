@@ -2,7 +2,7 @@
 
 // Selectors target [data-eventid] which is stable.
 // Recurring events: start time decoded from base64 data-eventid (contains UTC datetime).
-// Single events: start time parsed from textContent + date from nearest role=gridcell ancestor.
+// Single events: date parsed from own textContent "DD tháng MM, YYYY" (avoids gridcell concat bug).
 // End time + title parsed from Vietnamese textContent: "Từ 9AM đến 9:15AM, Title, ..."
 
 (function () {
@@ -37,31 +37,12 @@
     return d.getTime();
   }
 
-  // Single event: get year from view heading ("Tháng 4, 2026, ...")
-  function getViewYear() {
-    const el = document.querySelector('[data-view-heading]');
-    const match = el && el.getAttribute('data-view-heading').match(/(\d{4})/);
-    return match ? parseInt(match[1]) : new Date().getFullYear();
-  }
-
-  // Single event: find nearest role=gridcell ancestor
-  function findGridCell(el) {
-    let node = el.parentElement;
-    while (node && node !== document.body) {
-      if (node.getAttribute('role') === 'gridcell') return node;
-      node = node.parentElement;
-    }
-    return null;
-  }
-
-  // Single event: parse date from Vietnamese gridcell text
-  // Header always starts with "N sự kiện, thứ X, {day} tháng {month}" or "Không có sự kiện, chủ nhật, {day} tháng {month}"
-  // Anchor to weekday name to avoid matching dates inside event titles/descriptions
-  function parseDateFromCell(cell, year) {
-    const text = cell.textContent;
-    const match = text.match(/(?:chủ nhật|thứ\s+\w+),\s*(\d{1,2})\s+tháng\s+(\d{1,2})/i);
+  // Single event: textContent always contains "DD tháng MM, YYYY" (with year, unambiguous)
+  // e.g. "4:35PMdraftTừ ... Không có vị trí, 21 tháng 4, 2026"
+  function parseDateFromEventText(text) {
+    const match = text.match(/(\d{1,2})\s+tháng\s+(\d{1,2}),\s*(\d{4})/i);
     if (!match) return null;
-    return new Date(year, parseInt(match[2]) - 1, parseInt(match[1]));
+    return new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
   }
 
   // Single event: parse start time from event textContent
@@ -97,7 +78,7 @@
     const elements = document.querySelectorAll('[data-eventid]');
     const events = [];
     const seenIds = new Set();
-    const viewYear = getViewYear();
+    const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
 
     for (const el of elements) {
       const base64Id = el.getAttribute('data-eventid');
@@ -106,13 +87,12 @@
       // Try recurring event format first (has datetime in base64)
       let startTime = decodeStartTime(base64Id);
 
-      // Fallback: single event — get date from gridcell + time from textContent
+      // Fallback: single event — extract date from own textContent ("DD tháng MM, YYYY")
       if (!startTime) {
-        const cell = findGridCell(el);
-        if (!cell) continue;
-        const cellDate = parseDateFromCell(cell, viewYear);
-        if (!cellDate) continue;
-        startTime = parseStartTimeFromText(el.textContent || '', cellDate);
+        const text = el.textContent || '';
+        const refDate = parseDateFromEventText(text);
+        if (!refDate) continue;
+        startTime = parseStartTimeFromText(text, refDate);
         if (!startTime) continue;
       }
 
@@ -121,7 +101,6 @@
       if (!title) continue;
 
       // Skip events that ended before today
-      const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
       if (endTime < startOfToday.getTime()) continue;
 
       const id = `gcal_${base64Id.slice(0, 24)}`;
