@@ -121,9 +121,8 @@
     container.innerHTML = rows.join('');
   }
 
-  document.getElementById('send-digest-now').addEventListener('click', async () => {
-    const events = await EventStore.getEvents();
-    Notifier.showDailyDigest(events);
+  document.getElementById('send-digest-now').addEventListener('click', () => {
+    chrome.runtime.sendMessage({ type: 'SEND_DIGEST_NOW' });
   });
 
   // ── Settings tab ─────────────────────────────────────────────────

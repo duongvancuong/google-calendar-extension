@@ -41,8 +41,16 @@ async function updateBadge(events) {
   chrome.action.setBadgeBackgroundColor({ color: '#1a73e8' });
 }
 
-// Listen for events from content script
+// Listen for events from content script and popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'SEND_DIGEST_NOW') {
+    (async () => {
+      const events = await EventStore.getEvents();
+      Notifier.showDailyDigest(events);
+    })();
+    return;
+  }
+
   if (message.type === 'EVENTS_SCRAPED') {
     (async () => {
       const merged = await mergeAndSaveEvents(message.events);
