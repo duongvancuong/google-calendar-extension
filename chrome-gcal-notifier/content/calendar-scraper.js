@@ -116,12 +116,12 @@
         if (!startTime) continue;
       }
 
-      // Skip events ended more than 1 hour ago
-      if (startTime < Date.now() - 3600000) continue;
-
       const text = el.textContent || '';
       const { endTime, title } = parseFromText(text, startTime);
       if (!title) continue;
+
+      // Skip events that ended more than 1 hour ago
+      if (endTime < Date.now() - 3600000) continue;
 
       const id = `gcal_${base64Id.slice(0, 24)}`;
       if (seenIds.has(id)) continue;
