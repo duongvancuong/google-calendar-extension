@@ -120,8 +120,9 @@
       const { endTime, title } = parseFromText(text, startTime);
       if (!title) continue;
 
-      // Skip events that ended more than 1 hour ago
-      if (endTime < Date.now() - 3600000) continue;
+      // Skip events that ended before today
+      const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+      if (endTime < startOfToday.getTime()) continue;
 
       const id = `gcal_${base64Id.slice(0, 24)}`;
       if (seenIds.has(id)) continue;

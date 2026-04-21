@@ -51,8 +51,9 @@
     const endOfTomorrow = new Date();
     endOfTomorrow.setDate(endOfTomorrow.getDate() + 1);
     endOfTomorrow.setHours(23, 59, 59, 999);
+    const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
     const upcoming = events
-      .filter((e) => e.endTime >= now && e.startTime <= endOfTomorrow.getTime())
+      .filter((e) => e.endTime >= startOfToday.getTime() && e.startTime <= endOfTomorrow.getTime())
       .sort((a, b) => a.startTime - b.startTime);
 
     const container = document.getElementById('events-list');

@@ -10,7 +10,8 @@ importScripts(
 // Prunes events that ended more than 1 hour ago to keep storage clean.
 async function mergeAndSaveEvents(incoming) {
   const stored = await EventStore.getEvents();
-  const cutoff = Date.now() - 60 * 60 * 1000;
+  const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+  const cutoff = startOfToday.getTime();
   const storedById = {};
   for (const e of stored) {
     if (e.endTime >= cutoff) storedById[e.id] = e;
