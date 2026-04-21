@@ -7,10 +7,14 @@ importScripts(
 
 // Merge incoming scraped events with stored events, deduplicating by id.
 // Preserves notifiedAt from stored version to avoid re-notifying on rescrape.
+// Prunes events that ended more than 1 hour ago to keep storage clean.
 async function mergeAndSaveEvents(incoming) {
   const stored = await EventStore.getEvents();
+  const cutoff = Date.now() - 60 * 60 * 1000;
   const storedById = {};
-  for (const e of stored) storedById[e.id] = e;
+  for (const e of stored) {
+    if (e.endTime >= cutoff) storedById[e.id] = e;
+  }
   for (const e of incoming) {
     storedById[e.id] = storedById[e.id]
       ? Object.assign({}, e, { notifiedAt: storedById[e.id].notifiedAt })
