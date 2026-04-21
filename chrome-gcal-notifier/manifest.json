@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Google Calendar Notifier",
+  "version": "1.0.0",
+  "description": "Desktop notifications for Google Calendar events",
+  "permissions": ["notifications", "storage", "alarms", "tabs"],
+  "host_permissions": ["https://calendar.google.com/*"],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://calendar.google.com/*"],
+      "js": ["content/calendar-scraper.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Google Calendar Notifier",
+    "default_icon": {
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
