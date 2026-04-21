@@ -48,10 +48,12 @@
   async function renderUpcoming() {
     const events = await EventStore.getEvents();
     const now = Date.now();
+    const endOfTomorrow = new Date();
+    endOfTomorrow.setDate(endOfTomorrow.getDate() + 1);
+    endOfTomorrow.setHours(23, 59, 59, 999);
     const upcoming = events
-      .filter((e) => e.endTime >= now)
-      .sort((a, b) => a.startTime - b.startTime)
-      .slice(0, 20);
+      .filter((e) => e.endTime >= now && e.startTime <= endOfTomorrow.getTime())
+      .sort((a, b) => a.startTime - b.startTime);
 
     const container = document.getElementById('events-list');
     if (upcoming.length === 0) {

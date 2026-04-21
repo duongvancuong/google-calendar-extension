@@ -55,10 +55,11 @@
   }
 
   // Single event: parse date from Vietnamese gridcell text
-  // Format: "N sự kiện, thứ X, {day} tháng {month}..." or "Không có sự kiện, thứ X, {day} tháng {month}..."
+  // Header always starts with "N sự kiện, thứ X, {day} tháng {month}" or "Không có sự kiện, chủ nhật, {day} tháng {month}"
+  // Anchor to weekday name to avoid matching dates inside event titles/descriptions
   function parseDateFromCell(cell, year) {
     const text = cell.textContent;
-    const match = text.match(/(\d{1,2})\s+tháng\s+(\d{1,2})/);
+    const match = text.match(/(?:chủ nhật|thứ\s+\w+),\s*(\d{1,2})\s+tháng\s+(\d{1,2})/i);
     if (!match) return null;
     return new Date(year, parseInt(match[2]) - 1, parseInt(match[1]));
   }
