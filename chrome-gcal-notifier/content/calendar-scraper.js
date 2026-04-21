@@ -70,7 +70,9 @@
       const title = ariaLabel.split(',')[0].trim();
       if (!title) continue;
 
-      const id = `gcal_${hashString(title + times.startTime)}`;
+      const id = el.dataset.eventid
+        ? `gcal_${el.dataset.eventid}`
+        : `gcal_${hashString(title + times.startTime)}`;
       events.push({
         id,
         title,
@@ -88,7 +90,9 @@
 
   function sendEvents(events) {
     if (events.length === 0) return;
-    chrome.runtime.sendMessage({ type: 'EVENTS_SCRAPED', events });
+    chrome.runtime.sendMessage({ type: 'EVENTS_SCRAPED', events }, () => {
+      void chrome.runtime.lastError;
+    });
   }
 
   // Initial scrape after page load

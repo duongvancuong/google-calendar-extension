@@ -12,10 +12,9 @@ async function mergeAndSaveEvents(incoming) {
   const storedById = {};
   for (const e of stored) storedById[e.id] = e;
   for (const e of incoming) {
-    if (storedById[e.id]) {
-      e.notifiedAt = storedById[e.id].notifiedAt;
-    }
-    storedById[e.id] = e;
+    storedById[e.id] = storedById[e.id]
+      ? Object.assign({}, e, { notifiedAt: storedById[e.id].notifiedAt })
+      : Object.assign({}, e);
   }
   const merged = Object.values(storedById);
   await EventStore.saveEvents(merged);
@@ -44,7 +43,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const merged = await mergeAndSaveEvents(message.events);
       const settings = await EventStore.getSettings();
       await Scheduler.scheduleAlarms(merged, settings);
-      if (settings.digestEnabled) Scheduler.scheduleDailyDigest(settings.dailyDigestTime);
+      if (settings.digestEnabled) {
+        chrome.alarms.get('daily_digest', (existing) => {
+          if (!existing) Scheduler.scheduleDailyDigest(settings.dailyDigestTime);
+        });
+      }
       await updateBadge(merged);
       sendResponse({ ok: true });
     })();
@@ -52,11 +55,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Fire notification when alarm triggers
+// Fire notification when alarm triggers (single consolidated listener)
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === 'daily_digest') {
     const events = await EventStore.getEvents();
     Notifier.showDailyDigest(events);
+    return;
+  }
+
+  if (alarm.name.startsWith('snooze_')) {
+    const parts = alarm.name.split('_');
+    const ts = parts[parts.length - 1];
+    const eventId = parts.slice(1, -1).join('_');
+
+    const snoozedData = await new Promise((r) => chrome.storage.local.get('snoozed', r));
+    const entry = (snoozedData.snoozed || []).find(
+      (s) => s.eventId === eventId && String(s.at) === ts
+    );
+    if (!entry) return;
+
+    const events = await EventStore.getEvents();
+    const event = events.find((e) => e.id === eventId);
+    if (event) Notifier.showEventNotification(event, entry.minutesBefore);
+
+    const updated = (snoozedData.snoozed || []).filter(
+      (s) => !(s.eventId === eventId && String(s.at) === ts)
+    );
+    chrome.storage.local.set({ snoozed: updated });
     return;
   }
 
@@ -93,7 +118,7 @@ chrome.notifications.onButtonClicked.addListener(async (notifId, buttonIndex) =>
       snoozedList.push({ eventId: parsed.eventId, minutesBefore: parsed.minutesBefore, at: snoozeTs });
       chrome.storage.local.set({ snoozed: snoozedList });
       chrome.alarms.create(`snooze_${parsed.eventId}_${snoozeTs}`, {
-        when: Date.now() + 5 * 60 * 1000,
+        when: snoozeTs + 5 * 60 * 1000,
       });
     }
   } else if (buttonIndex === 1) {
@@ -102,26 +127,3 @@ chrome.notifications.onButtonClicked.addListener(async (notifId, buttonIndex) =>
   chrome.notifications.clear(notifId);
 });
 
-// Handle snooze alarms
-chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (!alarm.name.startsWith('snooze_')) return;
-  // alarm name format: snooze_<eventId>_<timestamp>
-  const parts = alarm.name.split('_');
-  const ts = parts[parts.length - 1];
-  const eventId = parts.slice(1, -1).join('_');
-
-  const snoozedData = await new Promise((r) => chrome.storage.local.get('snoozed', r));
-  const entry = (snoozedData.snoozed || []).find(
-    (s) => s.eventId === eventId && String(s.at) === ts
-  );
-  if (!entry) return;
-
-  const events = await EventStore.getEvents();
-  const event = events.find((e) => e.id === eventId);
-  if (event) Notifier.showEventNotification(event, entry.minutesBefore);
-
-  const updated = (snoozedData.snoozed || []).filter(
-    (s) => !(s.eventId === eventId && String(s.at) === ts)
-  );
-  chrome.storage.local.set({ snoozed: updated });
-});

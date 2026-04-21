@@ -68,8 +68,8 @@
         lastGroup = group;
       }
       const dotClass = isToday(event.startTime) ? '' : 'future';
-      const meetHtml = event.meetLink
-        ? `<a class="event-link" href="${event.meetLink}" target="_blank">Meet</a>`
+      const meetHtml = event.meetLink && event.meetLink.startsWith('https://meet.google.com/')
+        ? `<a class="event-link" href="${escapeHtml(event.meetLink)}" target="_blank">Meet</a>`
         : '';
       html += `
         <div class="event-item">
