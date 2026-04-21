@@ -1,42 +1,59 @@
 // content/calendar-scraper.js
 
-// NOTE: Google Calendar's DOM uses obfuscated class names that may change.
-// The selectors below target stable attributes (data-eventid, aria-label).
-// If scraping stops working, inspect calendar.google.com and update selectors.
+// Selectors target [data-eventid] which is stable.
+// Start time decoded from base64 data-eventid (contains UTC datetime).
+// End time + title parsed from Vietnamese textContent: "Từ 9AM đến 9:15AM, Title, ..."
+// If scraping breaks, check data-eventid format and textContent pattern on calendar.google.com.
 
 (function () {
   'use strict';
 
-  function hashString(str) {
-    let hash = 5381;
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) + hash) + str.charCodeAt(i);
-      hash = hash & hash;
+  // data-eventid is base64: "{eventUid}_{YYYYMMDDTHHMMSSZ} {calendarId}"
+  function decodeStartTime(base64Id) {
+    try {
+      const decoded = atob(base64Id);
+      const match = decoded.match(/_(\d{8}T\d{6}Z)/);
+      if (!match) return null;
+      const dt = match[1];
+      return new Date(
+        `${dt.slice(0,4)}-${dt.slice(4,6)}-${dt.slice(6,8)}T${dt.slice(9,11)}:${dt.slice(11,13)}:${dt.slice(13,15)}Z`
+      ).getTime();
+    } catch (e) {
+      return null;
     }
-    return Math.abs(hash).toString(36);
   }
 
-  function parseTimeFromAriaLabel(label) {
-    // aria-label examples (Google Calendar):
-    // "Standup, Monday April 21, 9:00 AM – 9:15 AM"
-    // "Meeting, 2:00 PM – 3:00 PM"
-    const timePattern = /(\d{1,2}:\d{2}\s*[AP]M)\s*[–\-]\s*(\d{1,2}:\d{2}\s*[AP]M)/i;
-    const datePattern = /(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+([A-Z][a-z]+ \d{1,2}(?:,\s*\d{4})?)/i;
+  // Parse "9AM" or "9:15AM" or "10:30PM" → timestamp on same day as refDate
+  function parseLocalTime(timeStr, refDate) {
+    const match = timeStr.match(/^(\d{1,2})(?::(\d{2}))?([AP]M)$/i);
+    if (!match) return null;
+    let h = parseInt(match[1], 10);
+    const m = parseInt(match[2] || '0', 10);
+    const meridiem = match[3].toUpperCase();
+    if (meridiem === 'PM' && h !== 12) h += 12;
+    if (meridiem === 'AM' && h === 12) h = 0;
+    const d = new Date(refDate);
+    d.setHours(h, m, 0, 0);
+    return d.getTime();
+  }
 
-    const timeMatch = label.match(timePattern);
-    if (!timeMatch) return null;
+  // Vietnamese textContent: "9AM[Villa] BE DailyTừ 9AM đến 9:15AM, [Villa] BE Daily, ..."
+  function parseFromText(text, startTime) {
+    // End time: "đến {time}"
+    const endMatch = text.match(/đến\s+(\d{1,2}(?::\d{2})?[AP]M)/i);
+    const endTime = endMatch
+      ? parseLocalTime(endMatch[1], new Date(startTime)) || (startTime + 3600000)
+      : startTime + 3600000;
 
-    const now = new Date();
-    const dateMatch = label.match(datePattern);
-    let dateStr = dateMatch
-      ? dateMatch[1] + (dateMatch[1].includes(',') ? '' : `, ${now.getFullYear()}`)
-      : `${now.toLocaleString('en-US', { month: 'long' })} ${now.getDate()}, ${now.getFullYear()}`;
+    // Title: segment after "đến {time}," and before next comma
+    let title = null;
+    if (endMatch) {
+      const after = text.slice(text.indexOf(endMatch[0]) + endMatch[0].length);
+      const titleMatch = after.match(/^[,\s]+([^,]+)/);
+      title = titleMatch ? titleMatch[1].trim() : null;
+    }
 
-    const startTime = new Date(`${dateStr} ${timeMatch[1]}`).getTime();
-    const endTime = new Date(`${dateStr} ${timeMatch[2]}`).getTime();
-
-    if (isNaN(startTime) || isNaN(endTime)) return null;
-    return { startTime, endTime };
+    return { endTime, title };
   }
 
   function extractMeetLink(el) {
@@ -45,41 +62,37 @@
   }
 
   function scrapeEvents() {
-    // Target event chip elements — try multiple selectors for resilience
-    const candidates = [
-      ...document.querySelectorAll('[data-eventid]'),
-      ...document.querySelectorAll('[data-eventchip-views]'),
-    ];
-
-    // Dedup by element reference
-    const seen = new Set();
-    const unique = candidates.filter((el) => {
-      if (seen.has(el)) return false;
-      seen.add(el);
-      return true;
-    });
-
+    const elements = document.querySelectorAll('[data-eventid]');
     const events = [];
-    for (const el of unique) {
-      const ariaLabel = el.getAttribute('aria-label') || '';
-      if (!ariaLabel) continue;
+    const seenIds = new Set();
 
-      const times = parseTimeFromAriaLabel(ariaLabel);
-      if (!times) continue;
+    for (const el of elements) {
+      const base64Id = el.getAttribute('data-eventid');
+      if (!base64Id) continue;
 
-      const title = ariaLabel.split(',')[0].trim();
+      const startTime = decodeStartTime(base64Id);
+      if (!startTime) continue;
+
+      // Skip events ended more than 1 hour ago
+      if (startTime < Date.now() - 3600000) continue;
+
+      const text = el.textContent || '';
+      const { endTime, title } = parseFromText(text, startTime);
       if (!title) continue;
 
-      const id = el.dataset.eventid
-        ? `gcal_${el.dataset.eventid}`
-        : `gcal_${hashString(title + times.startTime)}`;
+      // Use first 24 chars of base64 as stable ID (contains event UID)
+      const id = `gcal_${base64Id.slice(0, 24)}`;
+      if (seenIds.has(id)) continue;
+      seenIds.add(id);
+
+      const meetLink = extractMeetLink(el);
       events.push({
         id,
         title,
-        startTime: times.startTime,
-        endTime: times.endTime,
+        startTime,
+        endTime,
         location: null,
-        meetLink: extractMeetLink(el),
+        meetLink: meetLink && meetLink.startsWith('https://meet.google.com/') ? meetLink : null,
         calendarName: 'Google Calendar',
         notifiedAt: [],
         source: 'scrape',
