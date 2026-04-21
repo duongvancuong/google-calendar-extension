@@ -20,7 +20,7 @@
     const notifId = `event_${event.id}_${minutesBefore}before`;
     chrome.notifications.create(notifId, {
       type: 'basic',
-      iconUrl: '../icons/icon48.png',
+      iconUrl: chrome.runtime.getURL('icons/icon48.png'),
       title: event.title,
       message: `Bắt đầu sau ${minutesBefore} phút`,
       contextMessage: `${fmtTime(event.startTime)} – ${fmtTime(event.endTime)}`,
@@ -49,7 +49,7 @@
     const message = todayEvents.map((e) => `• ${fmtTime(e.startTime)} ${e.title}`).join('\n');
     chrome.notifications.create('daily_digest', {
       type: 'basic',
-      iconUrl: '../icons/icon48.png',
+      iconUrl: chrome.runtime.getURL('icons/icon48.png'),
       title: `Lịch hôm nay — ${fmtDate(new Date())}`,
       message,
       buttons: [{ title: 'Xem chi tiết' }],

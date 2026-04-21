@@ -21,6 +21,7 @@ global.chrome = {
   runtime: {
     sendMessage: jest.fn(),
     onMessage: { addListener: jest.fn() },
+    getURL: jest.fn((path) => `chrome-extension://test-id/${path}`),
   },
   action: {
     setBadgeText: jest.fn(),
