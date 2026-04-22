@@ -46,7 +46,11 @@
 
   // ── Upcoming tab ─────────────────────────────────────────────────
   async function renderUpcoming() {
-    const events = await EventStore.getEvents();
+    const [events, mlData] = await Promise.all([
+      EventStore.getEvents(),
+      new Promise((r) => chrome.storage.local.get('meetLinks', r)),
+    ]);
+    const meetLinks = mlData.meetLinks || {};
     const now = Date.now();
     const endOfTomorrow = new Date();
     endOfTomorrow.setDate(endOfTomorrow.getDate() + 1);
@@ -70,12 +74,14 @@
         html += `<div class="event-group-header">${group}</div>`;
         lastGroup = group;
       }
-      const dotClass = isToday(event.startTime) ? '' : 'future';
-      const meetHtml = event.meetLink && event.meetLink.startsWith('https://meet.google.com/')
-        ? `<a class="event-link" href="${escapeHtml(event.meetLink)}" target="_blank">Meet</a>`
+      const isPast = event.endTime < now;
+      const dotClass = isPast ? 'past' : (isToday(event.startTime) ? '' : 'future');
+      const resolvedMeetLink = meetLinks[event.id] || event.meetLink;
+      const meetHtml = resolvedMeetLink && resolvedMeetLink.startsWith('https://meet.google.com/')
+        ? `<button class="event-link" data-url="${escapeHtml(resolvedMeetLink)}">Meet</button>`
         : '';
       html += `
-        <div class="event-item">
+        <div class="event-item${isPast ? ' past' : ''}" data-url="https://calendar.google.com" role="button" tabindex="0">
           <div class="event-dot ${dotClass}"></div>
           <div class="event-info">
             <div class="event-title">${escapeHtml(event.title)}</div>
@@ -85,6 +91,20 @@
         </div>`;
     }
     container.innerHTML = html;
+
+    container.querySelectorAll('.event-item[data-url]').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.event-link')) return; // Meet button handles its own click
+        chrome.tabs.create({ url: item.dataset.url });
+      });
+    });
+
+    container.querySelectorAll('.event-link[data-url]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chrome.tabs.create({ url: btn.dataset.url });
+      });
+    });
   }
 
   document.getElementById('open-calendar').addEventListener('click', () => {
@@ -192,8 +212,45 @@
     setTimeout(() => { btn.textContent = 'Lưu Settings'; }, 1500);
   });
 
+  // ── Debug tab ────────────────────────────────────────────────────
+  async function renderDebug() {
+    const events = await EventStore.getEvents();
+    const alarms = await new Promise((r) => chrome.alarms.getAll(r));
+    const settings = await EventStore.getSettings();
+    const now = Date.now();
+
+    const upcoming = events.filter((e) => e.startTime > now).sort((a, b) => a.startTime - b.startTime);
+    const alarmLines = alarms.length
+      ? alarms.map((a) => `• ${a.name} → ${new Date(a.scheduledTime).toLocaleString('vi')}`).join('\n')
+      : '(không có alarm nào)';
+    const eventLines = upcoming.slice(0, 5).map(
+      (e) => `• [${e.id}] ${e.title} @ ${new Date(e.startTime).toLocaleString('vi')} notifiedAt=${JSON.stringify(e.notifiedAt)}`
+    ).join('\n') || '(không có event nào)';
+
+    document.getElementById('debug-info').innerText =
+      `=== Events stored: ${events.length} (sắp tới: ${upcoming.length}) ===\n${eventLines}\n\n` +
+      `=== Alarms: ${alarms.length} ===\n${alarmLines}\n\n` +
+      `=== Settings ===\nnotifyBefore: ${JSON.stringify(settings.notifyBefore)}\ndigestEnabled: ${settings.digestEnabled}`;
+  }
+
+  document.getElementById('debug-fire-notif').addEventListener('click', () => {
+    chrome.notifications.create('debug_test_popup', {
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('icons/icon48.png'),
+      title: 'Test (popup)',
+      message: 'Gọi từ popup context.',
+    });
+  });
+
+  document.getElementById('debug-fire-sw').addEventListener('click', () => {
+    chrome.runtime.sendMessage({ type: 'DEBUG_NOTIFY' });
+  });
+
+  document.getElementById('debug-refresh').addEventListener('click', renderDebug);
+
   // ── Init ─────────────────────────────────────────────────────────
   renderUpcoming();
   renderDigest();
   renderSettings();
+  renderDebug();
 })();

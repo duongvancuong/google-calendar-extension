@@ -123,11 +123,31 @@
     return events;
   }
 
+  function isContextValid() {
+    try {
+      return !!chrome.runtime?.id;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function teardown() {
+    observer.disconnect();
+    clearTimeout(debounceTimer);
+  }
+
+  function sendMessage(msg) {
+    if (!isContextValid()) { teardown(); return; }
+    try {
+      chrome.runtime.sendMessage(msg, () => { void chrome.runtime.lastError; });
+    } catch (e) {
+      teardown();
+    }
+  }
+
   function sendEvents(events) {
     if (events.length === 0) return;
-    chrome.runtime.sendMessage({ type: 'EVENTS_SCRAPED', events }, () => {
-      void chrome.runtime.lastError;
-    });
+    sendMessage({ type: 'EVENTS_SCRAPED', events });
   }
 
   // Initial scrape after page load
@@ -136,9 +156,35 @@
   // Watch for SPA navigation — Calendar re-renders on week/month change
   let debounceTimer = null;
   const observer = new MutationObserver(() => {
+    if (!isContextValid()) { teardown(); return; }
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => sendEvents(scrapeEvents()), 1500);
   });
 
   observer.observe(document.body, { childList: true, subtree: true });
+
+  // Scrape Meet link from detail popup after user clicks an event chip.
+  // Uses polling instead of debounced MutationObserver — Google Calendar
+  // mutates the DOM continuously so a debounce timer never fires reliably.
+  document.addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-eventid]');
+    if (!chip) return;
+    const chipId = chip.getAttribute('data-eventid');
+
+    let attempts = 0;
+    const poll = setInterval(() => {
+      attempts++;
+      if (!isContextValid()) { clearInterval(poll); return; }
+
+      const link = document.querySelector('a[href*="meet.google.com"]');
+      const meetLink = link?.href;
+      if (meetLink?.startsWith('https://meet.google.com/')) {
+        clearInterval(poll);
+        const eventId = `gcal_${chipId.slice(0, 24)}`;
+        sendMessage({ type: 'UPDATE_MEET_LINK', eventId, meetLink });
+        return;
+      }
+      if (attempts >= 20) clearInterval(poll); // give up after 4s
+    }, 200);
+  }, true);
 })();
