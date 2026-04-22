@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GCal Notifier</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="upcoming" role="tab">Upcoming</button>
+      <button class="tab" data-tab="digest" role="tab">Digest</button>
+      <button class="tab" data-tab="settings" role="tab">Settings</button>
+    </nav>
+
+    <section id="tab-upcoming" class="tab-panel active">
+      <div id="events-list">
+        <p class="empty-state">Đang tải sự kiện...</p>
+      </div>
+      <button id="open-calendar" class="btn-primary">Mở Google Calendar</button>
+    </section>
+
+    <section id="tab-digest" class="tab-panel">
+      <div id="digest-content">
+        <p class="empty-state">Chưa có digest hôm nay.</p>
+      </div>
+      <button id="send-digest-now" class="btn-secondary">Gửi digest ngay</button>
+    </section>
+
+    <section id="tab-settings" class="tab-panel">
+      <div class="settings-group">
+        <label class="settings-label">Thông báo trước (phút)</label>
+        <div id="notify-chips" class="chip-list"></div>
+        <div class="add-chip-row">
+          <input id="new-minutes" type="number" min="1" max="120" placeholder="Nhập phút" />
+          <button id="add-minutes" class="btn-secondary">+ Thêm</button>
+        </div>
+      </div>
+      <div class="settings-group">
+        <label class="settings-label">Daily Digest</label>
+        <div class="settings-row">
+          <label class="toggle-label">
+            <input id="digest-enabled" type="checkbox" />
+            Bật digest hàng ngày
+          </label>
+        </div>
+        <div class="settings-row">
+          <label>Giờ nhận: </label>
+          <input id="digest-time" type="time" value="08:00" />
+        </div>
+      </div>
+      <div class="settings-group">
+        <label class="settings-label">Nguồn dữ liệu</label>
+        <label class="radio-label">
+          <input type="radio" name="source" value="scrape" checked /> Scraping (hiện tại)
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="source" value="api" /> Google Calendar API
+        </label>
+        <div id="api-credentials" class="hidden">
+          <input id="api-key" type="password" placeholder="Nhập OAuth Client ID khi sẵn sàng" />
+        </div>
+      </div>
+      <button id="save-settings" class="btn-primary">Lưu Settings</button>
+    </section>
+  </div>
+
+  <script src="../src/event-store.js"></script>
+  <script src="../src/notifier.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
