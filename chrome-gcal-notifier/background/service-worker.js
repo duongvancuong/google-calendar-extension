@@ -9,12 +9,21 @@ importScripts(
 // Preserves notifiedAt from stored version to avoid re-notifying on rescrape.
 // Prunes events that ended more than 1 hour ago to keep storage clean.
 async function mergeAndSaveEvents(incoming) {
-  const stored = await EventStore.getEvents();
+  const [stored, allAlarms] = await Promise.all([
+    EventStore.getEvents(),
+    new Promise((r) => chrome.alarms.getAll(r)),
+  ]);
+
+  // Events with pending alarms must never be pruned even if endTime looks wrong.
+  const alarmedIds = new Set(
+    allAlarms.map((a) => Scheduler.parseAlarmName(a.name)?.eventId).filter(Boolean)
+  );
+
   const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
   const cutoff = startOfToday.getTime();
   const storedById = {};
   for (const e of stored) {
-    if (e.endTime >= cutoff) storedById[e.id] = e;
+    if (e.endTime >= cutoff || alarmedIds.has(e.id)) storedById[e.id] = e;
   }
   for (const e of incoming) {
     storedById[e.id] = storedById[e.id]
@@ -43,10 +52,31 @@ async function updateBadge(events) {
 
 // Listen for events from content script and popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'DEBUG_NOTIFY') {
+    chrome.notifications.create('debug_test_sw', {
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('icons/icon48.png'),
+      title: 'Test (service worker)',
+      message: 'Gọi từ service worker context.',
+    }, (id) => {
+      console.log('[gcal] debug notify created, id=', id, 'lastError=', chrome.runtime.lastError);
+    });
+    return;
+  }
+
   if (message.type === 'SEND_DIGEST_NOW') {
     (async () => {
       const events = await EventStore.getEvents();
       Notifier.showDailyDigest(events);
+    })();
+    return;
+  }
+
+  if (message.type === 'UPDATE_MEET_LINK') {
+    (async () => {
+      const data = await new Promise((r) => chrome.storage.local.get('meetLinks', r));
+      const meetLinks = Object.assign({}, data.meetLinks, { [message.eventId]: message.meetLink });
+      await new Promise((r) => chrome.storage.local.set({ meetLinks }, r));
     })();
     return;
   }
@@ -56,6 +86,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const merged = await mergeAndSaveEvents(message.events);
       const settings = await EventStore.getSettings();
       await Scheduler.scheduleAlarms(merged, settings);
+
+      // Fire notifications immediately for events whose alarm time just passed
+      const immediate = Scheduler.computeImmediateNotifications(merged, settings, Date.now());
+      for (const { event, minutesBefore } of immediate) {
+        Notifier.showEventNotification(event, minutesBefore);
+        await EventStore.markNotified(event.id, minutesBefore);
+      }
       if (settings.digestEnabled) {
         chrome.alarms.get('daily_digest', (existing) => {
           if (!existing) Scheduler.scheduleDailyDigest(settings.dailyDigestTime);
@@ -99,10 +136,12 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   }
 
   const parsed = Scheduler.parseAlarmName(alarm.name);
+  console.log('[gcal] alarm fired', alarm.name, 'parsed:', parsed);
   if (!parsed) return;
 
   const events = await EventStore.getEvents();
   const event = events.find((e) => e.id === parsed.eventId);
+  console.log('[gcal] event found:', event?.title ?? 'NOT FOUND');
   if (!event) return;
 
   Notifier.showEventNotification(event, parsed.minutesBefore);

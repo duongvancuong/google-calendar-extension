@@ -24,11 +24,16 @@
     const now = Date.now();
     const pending = computePendingAlarms(events, settings, now);
     const existing = await new Promise((r) => chrome.alarms.getAll(r));
-    const existingNames = new Set(existing.map((a) => a.name));
+    const existingMap = new Map(existing.map((a) => [a.name, a]));
     for (const alarm of pending) {
-      if (!existingNames.has(alarm.name)) {
-        chrome.alarms.create(alarm.name, { when: alarm.when });
+      const existingAlarm = existingMap.get(alarm.name);
+      if (existingAlarm) {
+        // Alarm đã đúng giờ — bỏ qua
+        if (Math.abs(existingAlarm.scheduledTime - alarm.when) <= 60000) continue;
+        // startTime của event đã thay đổi — xóa alarm cũ rồi tạo lại
+        await new Promise((r) => chrome.alarms.clear(alarm.name, r));
       }
+      chrome.alarms.create(alarm.name, { when: alarm.when });
     }
   }
 
@@ -46,7 +51,23 @@
     return { eventId: match[1], minutesBefore: parseInt(match[2], 10) };
   }
 
-  const Scheduler = { computePendingAlarms, scheduleAlarms, scheduleDailyDigest, parseAlarmName };
+  // Returns notifications that should fire immediately:
+  // alarm time has passed but event hasn't started yet and not already notified.
+  function computeImmediateNotifications(events, settings, now) {
+    const result = [];
+    for (const event of events) {
+      if (event.startTime <= now) continue;
+      for (const minutes of settings.notifyBefore) {
+        const when = event.startTime - minutes * 60 * 1000;
+        if (when <= now && !(event.notifiedAt || []).includes(minutes)) {
+          result.push({ event, minutesBefore: minutes });
+        }
+      }
+    }
+    return result;
+  }
+
+  const Scheduler = { computePendingAlarms, computeImmediateNotifications, scheduleAlarms, scheduleDailyDigest, parseAlarmName };
 
   if (typeof module !== 'undefined') module.exports = Scheduler;
   else globalThis.Scheduler = Scheduler;

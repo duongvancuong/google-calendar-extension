@@ -12,6 +12,7 @@
       <button class="tab active" data-tab="upcoming" role="tab">Upcoming</button>
       <button class="tab" data-tab="digest" role="tab">Digest</button>
       <button class="tab" data-tab="settings" role="tab">Settings</button>
+      <button class="tab" data-tab="debug" role="tab">Debug</button>
     </nav>
 
     <section id="tab-upcoming" class="tab-panel active">
@@ -63,6 +64,16 @@
         </div>
       </div>
       <button id="save-settings" class="btn-primary">Lưu Settings</button>
+    </section>
+  </div>
+
+    <section id="tab-debug" class="tab-panel">
+      <div class="settings-group">
+        <div id="debug-info" style="font-size:11px;color:#5f6368;line-height:1.6;word-break:break-all;"></div>
+      </div>
+      <button id="debug-fire-notif" class="btn-secondary">Test (từ popup)</button>
+      <button id="debug-fire-sw" class="btn-secondary" style="margin-top:6px">Test (từ service worker)</button>
+      <button id="debug-refresh" class="btn-secondary" style="margin-top:6px">Làm mới</button>
     </section>
   </div>
 

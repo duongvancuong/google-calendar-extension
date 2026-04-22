@@ -27,9 +27,7 @@
       buttons: [
         { title: 'Snooze 5p' },
         { title: 'Mở Calendar' },
-        { title: 'Đã biết' },
       ],
-      requireInteraction: true,
     });
     return notifId;
   }

@@ -55,12 +55,17 @@ body {
   padding: 6px 4px;
   border-radius: 4px;
   transition: background 0.1s;
+  cursor: pointer;
 }
 
 .event-item:hover { background: #f1f3f4; }
 
 .event-dot { width: 8px; height: 8px; border-radius: 50%; background: #1a73e8; flex-shrink: 0; }
 .event-dot.future { background: #dadce0; }
+.event-dot.past { background: #dadce0; }
+
+.event-item.past .event-title { text-decoration: line-through; color: #9aa0a6; }
+.event-item.past .event-time { color: #bdc1c6; }
 
 .event-info { flex: 1; min-width: 0; }
 .event-title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -70,6 +75,10 @@ body {
   font-size: 11px;
   color: #1a73e8;
   text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
   flex-shrink: 0;
 }
 

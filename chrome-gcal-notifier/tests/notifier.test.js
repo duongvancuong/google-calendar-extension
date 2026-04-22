@@ -23,7 +23,7 @@ describe('Notifier.showEventNotification', () => {
     expect(notifId).toBe('event_e1_10before');
     expect(options.title).toBe('Standup');
     expect(options.message).toBe('Bắt đầu sau 10 phút');
-    expect(options.buttons).toHaveLength(3);
+    expect(options.buttons).toHaveLength(2);
     expect(options.buttons[0].title).toBe('Snooze 5p');
   });
 });
