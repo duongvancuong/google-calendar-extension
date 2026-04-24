@@ -39,3 +39,6 @@ coverage/
 .cache/
 .eslintcache
 .parcelcache/
+
+# Local-only design docs (specs, plans)
+docs/
