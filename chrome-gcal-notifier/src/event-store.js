@@ -2,12 +2,21 @@
 (function () {
   'use strict';
 
+  const SUPPORTED_LANGS = ['vi', 'en'];
+
   const DEFAULT_SETTINGS = {
     notifyBefore: [10, 30],
     dailyDigestTime: '08:00',
     digestEnabled: true,
     apiEnabled: false,
+    language: null,
   };
+
+  function sanitizeSettings(settings) {
+    const next = Object.assign({}, settings);
+    if (!SUPPORTED_LANGS.includes(next.language)) next.language = null;
+    return next;
+  }
 
   function getEvents() {
     return new Promise((resolve) =>
@@ -30,8 +39,9 @@
   }
 
   function saveSettings(settings) {
+    const sanitized = sanitizeSettings(settings);
     return new Promise((resolve) =>
-      chrome.storage.local.set({ settings }, resolve)
+      chrome.storage.local.set({ settings: sanitized }, resolve)
     );
   }
 

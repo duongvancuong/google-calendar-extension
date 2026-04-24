@@ -2,7 +2,6 @@
 (function () {
   'use strict';
 
-  // ── Tab navigation ───────────────────────────────────────────────
   document.querySelectorAll('.tab').forEach((tab) => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
@@ -11,26 +10,6 @@
       document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
     });
   });
-
-  // ── Helpers ──────────────────────────────────────────────────────
-  function pad(n) { return String(n).padStart(2, '0'); }
-
-  function fmtTime(ts) {
-    const d = new Date(ts);
-    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
-
-  function dayLabel(ts) {
-    const d = new Date(ts);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    if (d >= today && d < tomorrow) return 'HÔM NAY';
-    if (d >= tomorrow && d < new Date(tomorrow.getTime() + 86400000)) return 'NGÀY MAI';
-    const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-    return `${days[d.getDay()]} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
-  }
 
   function isToday(ts) {
     const d = new Date(ts);
@@ -44,7 +23,12 @@
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  // ── Upcoming tab ─────────────────────────────────────────────────
+  function eventGlyph(event, now) {
+    if (event.endTime < now) return '░';
+    if (isToday(event.startTime)) return '▓';
+    return '▒';
+  }
+
   async function renderUpcoming() {
     const [events, mlData] = await Promise.all([
       EventStore.getEvents(),
@@ -62,30 +46,30 @@
 
     const container = document.getElementById('events-list');
     if (upcoming.length === 0) {
-      container.innerHTML = '<p class="empty-state">Không có sự kiện sắp tới.<br>Mở Google Calendar để tải dữ liệu.</p>';
+      container.innerHTML = `<p class="empty-state"><span class="terminal-prompt">&gt; ${escapeHtml(I18n.t('upcoming.empty'))}</span><span class="blink">_</span></p>`;
       return;
     }
 
     let lastGroup = null;
     let html = '';
     for (const event of upcoming) {
-      const group = dayLabel(event.startTime);
+      const group = I18n.dayLabel(event.startTime);
       if (group !== lastGroup) {
-        html += `<div class="event-group-header">${group}</div>`;
+        html += `<div class="event-group-header">${escapeHtml(group)}</div>`;
         lastGroup = group;
       }
       const isPast = event.endTime < now;
-      const dotClass = isPast ? 'past' : (isToday(event.startTime) ? '' : 'future');
+      const glyph = eventGlyph(event, now);
       const resolvedMeetLink = meetLinks[event.id] || event.meetLink;
       const meetHtml = resolvedMeetLink && resolvedMeetLink.startsWith('https://meet.google.com/')
-        ? `<button class="event-link" data-url="${escapeHtml(resolvedMeetLink)}">Meet</button>`
+        ? `<button class="event-link" data-url="${escapeHtml(resolvedMeetLink)}">${escapeHtml(I18n.t('upcoming.meet'))}</button>`
         : '';
       html += `
         <div class="event-item${isPast ? ' past' : ''}" data-url="https://calendar.google.com" role="button" tabindex="0">
-          <div class="event-dot ${dotClass}"></div>
+          <span class="event-glyph">${glyph}</span>
           <div class="event-info">
             <div class="event-title">${escapeHtml(event.title)}</div>
-            <div class="event-time">${fmtTime(event.startTime)} – ${fmtTime(event.endTime)}</div>
+            <div class="event-time">${I18n.formatTime(event.startTime)} – ${I18n.formatTime(event.endTime)}</div>
           </div>
           ${meetHtml}
         </div>`;
@@ -94,7 +78,7 @@
 
     container.querySelectorAll('.event-item[data-url]').forEach((item) => {
       item.addEventListener('click', (e) => {
-        if (e.target.closest('.event-link')) return; // Meet button handles its own click
+        if (e.target.closest('.event-link')) return;
         chrome.tabs.create({ url: item.dataset.url });
       });
     });
@@ -111,7 +95,6 @@
     chrome.tabs.create({ url: 'https://calendar.google.com' });
   });
 
-  // ── Digest tab ───────────────────────────────────────────────────
   async function renderDigest() {
     const events = await EventStore.getEvents();
     const startOfDay = new Date();
@@ -125,16 +108,16 @@
 
     const container = document.getElementById('digest-content');
     if (todayEvents.length === 0) {
-      container.innerHTML = '<p class="empty-state">Không có sự kiện hôm nay.</p>';
+      container.innerHTML = `<p class="empty-state"><span class="terminal-prompt">&gt; ${escapeHtml(I18n.t('digest.empty'))}</span><span class="blink">_</span></p>`;
       return;
     }
 
     const rows = todayEvents.map(
       (e) => `<div class="event-item">
-        <div class="event-dot"></div>
+        <span class="event-glyph">▓</span>
         <div class="event-info">
           <div class="event-title">${escapeHtml(e.title)}</div>
-          <div class="event-time">${fmtTime(e.startTime)} – ${fmtTime(e.endTime)}</div>
+          <div class="event-time">${I18n.formatTime(e.startTime)} – ${I18n.formatTime(e.endTime)}</div>
         </div>
       </div>`
     );
@@ -145,7 +128,6 @@
     chrome.runtime.sendMessage({ type: 'SEND_DIGEST_NOW' });
   });
 
-  // ── Settings tab ─────────────────────────────────────────────────
   async function renderSettings() {
     const settings = await EventStore.getSettings();
 
@@ -154,6 +136,10 @@
     document.getElementById('digest-time').value = settings.dailyDigestTime;
     document.querySelector(`input[name="source"][value="${settings.apiEnabled ? 'api' : 'scrape'}"]`).checked = true;
     document.getElementById('api-credentials').classList.toggle('hidden', !settings.apiEnabled);
+
+    const currentLang = I18n.getLang();
+    const langRadio = document.querySelector(`input[name="language"][value="${currentLang}"]`);
+    if (langRadio) langRadio.checked = true;
   }
 
   function renderNotifyChips(minutes) {
@@ -162,10 +148,12 @@
       .sort((a, b) => a - b)
       .map(
         (m) => `<span class="chip">${m}p
-          <button class="chip-remove" data-minutes="${m}" title="Xóa">×</button>
+          <button class="chip-remove" data-minutes="${m}" data-i18n-title="common.remove" title="Remove">×</button>
         </span>`
       )
       .join('');
+
+    I18n.applyToDOM(container);
 
     container.querySelectorAll('.chip-remove').forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -199,58 +187,36 @@
     });
   });
 
+  document.querySelectorAll('input[name="language"]').forEach((radio) => {
+    radio.addEventListener('change', async () => {
+      if (!radio.checked) return;
+      await I18n.setLang(radio.value);
+      I18n.applyToDOM(document);
+      await renderUpcoming();
+      await renderDigest();
+    });
+  });
+
   document.getElementById('save-settings').addEventListener('click', async () => {
     const settings = await EventStore.getSettings();
     const updated = Object.assign({}, settings, {
       digestEnabled: document.getElementById('digest-enabled').checked,
       dailyDigestTime: document.getElementById('digest-time').value,
       apiEnabled: document.querySelector('input[name="source"]:checked').value === 'api',
+      language: I18n.getLang(),
     });
     await EventStore.saveSettings(updated);
     const btn = document.getElementById('save-settings');
-    btn.textContent = 'Đã lưu ✓';
-    setTimeout(() => { btn.textContent = 'Lưu Settings'; }, 1500);
+    const original = I18n.t('common.save');
+    btn.textContent = I18n.t('common.saved');
+    setTimeout(() => { btn.textContent = original; }, 1500);
   });
 
-  // ── Debug tab ────────────────────────────────────────────────────
-  async function renderDebug() {
-    const events = await EventStore.getEvents();
-    const alarms = await new Promise((r) => chrome.alarms.getAll(r));
-    const settings = await EventStore.getSettings();
-    const now = Date.now();
-
-    const upcoming = events.filter((e) => e.startTime > now).sort((a, b) => a.startTime - b.startTime);
-    const alarmLines = alarms.length
-      ? alarms.map((a) => `• ${a.name} → ${new Date(a.scheduledTime).toLocaleString('vi')}`).join('\n')
-      : '(không có alarm nào)';
-    const eventLines = upcoming.slice(0, 5).map(
-      (e) => `• [${e.id}] ${e.title} @ ${new Date(e.startTime).toLocaleString('vi')} notifiedAt=${JSON.stringify(e.notifiedAt)}`
-    ).join('\n') || '(không có event nào)';
-
-    document.getElementById('debug-info').innerText =
-      `=== Events stored: ${events.length} (sắp tới: ${upcoming.length}) ===\n${eventLines}\n\n` +
-      `=== Alarms: ${alarms.length} ===\n${alarmLines}\n\n` +
-      `=== Settings ===\nnotifyBefore: ${JSON.stringify(settings.notifyBefore)}\ndigestEnabled: ${settings.digestEnabled}`;
-  }
-
-  document.getElementById('debug-fire-notif').addEventListener('click', () => {
-    chrome.notifications.create('debug_test_popup', {
-      type: 'basic',
-      iconUrl: chrome.runtime.getURL('icons/icon48.png'),
-      title: 'Test (popup)',
-      message: 'Gọi từ popup context.',
-    });
-  });
-
-  document.getElementById('debug-fire-sw').addEventListener('click', () => {
-    chrome.runtime.sendMessage({ type: 'DEBUG_NOTIFY' });
-  });
-
-  document.getElementById('debug-refresh').addEventListener('click', renderDebug);
-
-  // ── Init ─────────────────────────────────────────────────────────
-  renderUpcoming();
-  renderDigest();
-  renderSettings();
-  renderDebug();
+  (async function init() {
+    await I18n.init();
+    I18n.applyToDOM(document);
+    await renderUpcoming();
+    await renderDigest();
+    await renderSettings();
+  })();
 })();
