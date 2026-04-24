@@ -125,8 +125,8 @@ npm test
 ./scripts/package.sh
 ```
 
-See [`docs/superpowers/specs/`](../docs/superpowers/specs/) at the repo root
-for design documents.
+Design docs (specs, plans) live locally under `docs/` at the repo root and
+are intentionally untracked.
 
 ## License
 
