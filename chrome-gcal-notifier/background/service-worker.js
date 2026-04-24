@@ -1,9 +1,16 @@
 // background/service-worker.js
 importScripts(
+  '../src/i18n.js',
   '../src/event-store.js',
   '../src/scheduler.js',
   '../src/notifier.js'
 );
+
+let i18nReady = null;
+function ensureI18n() {
+  if (!i18nReady) i18nReady = I18n.init();
+  return i18nReady;
+}
 
 // Merge incoming scraped events with stored events, deduplicating by id.
 // Preserves notifiedAt from stored version to avoid re-notifying on rescrape.
@@ -47,25 +54,14 @@ async function updateBadge(events) {
   );
   const count = remaining.length;
   chrome.action.setBadgeText({ text: count > 0 ? String(count) : '' });
-  chrome.action.setBadgeBackgroundColor({ color: '#1a73e8' });
+  chrome.action.setBadgeBackgroundColor({ color: '#00ff66' });
 }
 
 // Listen for events from content script and popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'DEBUG_NOTIFY') {
-    chrome.notifications.create('debug_test_sw', {
-      type: 'basic',
-      iconUrl: chrome.runtime.getURL('icons/icon48.png'),
-      title: 'Test (service worker)',
-      message: 'Gọi từ service worker context.',
-    }, (id) => {
-      console.log('[gcal] debug notify created, id=', id, 'lastError=', chrome.runtime.lastError);
-    });
-    return;
-  }
-
   if (message.type === 'SEND_DIGEST_NOW') {
     (async () => {
+      await ensureI18n();
       const events = await EventStore.getEvents();
       Notifier.showDailyDigest(events);
     })();
@@ -83,6 +79,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === 'EVENTS_SCRAPED') {
     (async () => {
+      await ensureI18n();
       const merged = await mergeAndSaveEvents(message.events);
       const settings = await EventStore.getSettings();
       await Scheduler.scheduleAlarms(merged, settings);
@@ -107,6 +104,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Fire notification when alarm triggers (single consolidated listener)
 chrome.alarms.onAlarm.addListener(async (alarm) => {
+  await ensureI18n();
   if (alarm.name === 'daily_digest') {
     const events = await EventStore.getEvents();
     Notifier.showDailyDigest(events);
@@ -136,12 +134,10 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   }
 
   const parsed = Scheduler.parseAlarmName(alarm.name);
-  console.log('[gcal] alarm fired', alarm.name, 'parsed:', parsed);
   if (!parsed) return;
 
   const events = await EventStore.getEvents();
   const event = events.find((e) => e.id === parsed.eventId);
-  console.log('[gcal] event found:', event?.title ?? 'NOT FOUND');
   if (!event) return;
 
   Notifier.showEventNotification(event, parsed.minutesBefore);
@@ -150,6 +146,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
 // Handle notification button clicks
 chrome.notifications.onButtonClicked.addListener(async (notifId, buttonIndex) => {
+  await ensureI18n();
   if (notifId === 'daily_digest') {
     if (buttonIndex === 0) chrome.tabs.create({ url: 'https://calendar.google.com' });
     chrome.notifications.clear(notifId);

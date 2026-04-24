@@ -2,6 +2,10 @@
 (function () {
   'use strict';
 
+  const i18n = typeof module !== 'undefined'
+    ? require('./i18n')
+    : (typeof globalThis !== 'undefined' ? globalThis.I18n : null);
+
   function pad(n) {
     return String(n).padStart(2, '0');
   }
@@ -12,8 +16,13 @@
   }
 
   function fmtDate(d) {
-    const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-    return `${days[d.getDay()]} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
+    return i18n && typeof i18n.formatShortDate === 'function'
+      ? i18n.formatShortDate(d)
+      : `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
+  }
+
+  function translate(key, params) {
+    return i18n && typeof i18n.t === 'function' ? i18n.t(key, params) : key;
   }
 
   function showEventNotification(event, minutesBefore) {
@@ -22,11 +31,11 @@
       type: 'basic',
       iconUrl: chrome.runtime.getURL('icons/icon48.png'),
       title: event.title,
-      message: `Bắt đầu sau ${minutesBefore} phút`,
+      message: translate('notif.eventStarting', { min: minutesBefore }),
       contextMessage: `${fmtTime(event.startTime)} – ${fmtTime(event.endTime)}`,
       buttons: [
-        { title: 'Snooze 5p' },
-        { title: 'Mở Calendar' },
+        { title: translate('notif.snooze5') },
+        { title: translate('notif.openCalendar') },
       ],
     });
     return notifId;
@@ -48,9 +57,9 @@
     chrome.notifications.create('daily_digest', {
       type: 'basic',
       iconUrl: chrome.runtime.getURL('icons/icon48.png'),
-      title: `Lịch hôm nay — ${fmtDate(new Date())}`,
+      title: translate('notif.digestTitle', { date: fmtDate(new Date()) }),
       message,
-      buttons: [{ title: 'Xem chi tiết' }],
+      buttons: [{ title: translate('notif.digestDetails') }],
     });
   }
 

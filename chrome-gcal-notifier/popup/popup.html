@@ -9,74 +9,123 @@
 <body>
   <div class="container">
     <nav class="tabs" role="tablist">
-      <button class="tab active" data-tab="upcoming" role="tab">Upcoming</button>
-      <button class="tab" data-tab="digest" role="tab">Digest</button>
-      <button class="tab" data-tab="settings" role="tab">Settings</button>
-      <button class="tab" data-tab="debug" role="tab">Debug</button>
+      <button class="tab active" data-tab="upcoming" role="tab" data-i18n="tab.upcoming">Upcoming</button>
+      <button class="tab" data-tab="digest" role="tab" data-i18n="tab.digest">Digest</button>
+      <button class="tab" data-tab="settings" role="tab" data-i18n="tab.settings">Settings</button>
+      <button class="tab" data-tab="guide" role="tab" data-i18n="tab.guide">Guide</button>
     </nav>
 
     <section id="tab-upcoming" class="tab-panel active">
       <div id="events-list">
-        <p class="empty-state">Đang tải sự kiện...</p>
+        <p class="empty-state" data-i18n="upcoming.loading">Loading...</p>
       </div>
-      <button id="open-calendar" class="btn-primary">Mở Google Calendar</button>
+      <button id="open-calendar" class="btn-primary" data-i18n="common.openCalendar">Open Google Calendar</button>
     </section>
 
     <section id="tab-digest" class="tab-panel">
       <div id="digest-content">
-        <p class="empty-state">Chưa có digest hôm nay.</p>
+        <p class="empty-state" data-i18n="digest.empty">No events today.</p>
       </div>
-      <button id="send-digest-now" class="btn-secondary">Gửi digest ngay</button>
+      <button id="send-digest-now" class="btn-secondary" data-i18n="digest.sendNow">Send digest now</button>
     </section>
 
     <section id="tab-settings" class="tab-panel">
       <div class="settings-group">
-        <label class="settings-label">Thông báo trước (phút)</label>
+        <label class="settings-label" data-i18n="settings.language">Language</label>
+        <label class="radio-label">
+          <input type="radio" name="language" value="vi" />
+          <span data-i18n="settings.languageVi">Tiếng Việt</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="language" value="en" />
+          <span data-i18n="settings.languageEn">English</span>
+        </label>
+      </div>
+      <div class="settings-group">
+        <label class="settings-label" data-i18n="settings.notifyBefore">Notify before (minutes)</label>
         <div id="notify-chips" class="chip-list"></div>
         <div class="add-chip-row">
-          <input id="new-minutes" type="number" min="1" max="120" placeholder="Nhập phút" />
-          <button id="add-minutes" class="btn-secondary">+ Thêm</button>
+          <input id="new-minutes" type="number" min="1" max="120"
+                 data-i18n-placeholder="settings.notifyBeforeInput"
+                 placeholder="Minutes" />
+          <button id="add-minutes" class="btn-secondary" data-i18n="common.add">+ Add</button>
         </div>
       </div>
       <div class="settings-group">
-        <label class="settings-label">Daily Digest</label>
+        <label class="settings-label" data-i18n="settings.digestHeading">Daily digest</label>
         <div class="settings-row">
           <label class="toggle-label">
             <input id="digest-enabled" type="checkbox" />
-            Bật digest hàng ngày
+            <span data-i18n="settings.digestEnable">Enable daily digest</span>
           </label>
         </div>
         <div class="settings-row">
-          <label>Giờ nhận: </label>
+          <label data-i18n="settings.digestTime">Delivery time</label>
           <input id="digest-time" type="time" value="08:00" />
         </div>
       </div>
       <div class="settings-group">
-        <label class="settings-label">Nguồn dữ liệu</label>
+        <label class="settings-label" data-i18n="settings.source">Data source</label>
         <label class="radio-label">
-          <input type="radio" name="source" value="scrape" checked /> Scraping (hiện tại)
+          <input type="radio" name="source" value="scrape" checked />
+          <span data-i18n="settings.sourceScrape">Scraping (current)</span>
         </label>
         <label class="radio-label">
-          <input type="radio" name="source" value="api" /> Google Calendar API
+          <input type="radio" name="source" value="api" />
+          <span data-i18n="settings.sourceApi">Google Calendar API</span>
         </label>
         <div id="api-credentials" class="hidden">
-          <input id="api-key" type="password" placeholder="Nhập OAuth Client ID khi sẵn sàng" />
+          <input id="api-key" type="password"
+                 data-i18n-placeholder="settings.apiKeyPlaceholder"
+                 placeholder="Paste OAuth Client ID when ready" />
         </div>
       </div>
-      <button id="save-settings" class="btn-primary">Lưu Settings</button>
+      <button id="save-settings" class="btn-primary" data-i18n="common.save">Save settings</button>
     </section>
-  </div>
 
-    <section id="tab-debug" class="tab-panel">
-      <div class="settings-group">
-        <div id="debug-info" style="font-size:11px;color:#5f6368;line-height:1.6;word-break:break-all;"></div>
+    <section id="tab-guide" class="tab-panel">
+      <div class="guide-section">
+        <h3 data-i18n="guide.setup.heading">Initial setup</h3>
+        <ol class="guide-list">
+          <li data-i18n="guide.setup.step1"></li>
+          <li data-i18n="guide.setup.step2"></li>
+          <li data-i18n="guide.setup.step3"></li>
+        </ol>
       </div>
-      <button id="debug-fire-notif" class="btn-secondary">Test (từ popup)</button>
-      <button id="debug-fire-sw" class="btn-secondary" style="margin-top:6px">Test (từ service worker)</button>
-      <button id="debug-refresh" class="btn-secondary" style="margin-top:6px">Làm mới</button>
+      <div class="guide-section">
+        <h3 data-i18n="guide.tabs.heading">Tabs</h3>
+        <dl class="guide-defs">
+          <dt data-i18n="tab.upcoming"></dt>
+          <dd data-i18n="guide.tabs.upcoming"></dd>
+          <dt data-i18n="tab.digest"></dt>
+          <dd data-i18n="guide.tabs.digest"></dd>
+          <dt data-i18n="tab.settings"></dt>
+          <dd data-i18n="guide.tabs.settings"></dd>
+        </dl>
+      </div>
+      <div class="guide-section">
+        <h3 data-i18n="guide.howItWorks.heading">How it works</h3>
+        <ul class="guide-list">
+          <li data-i18n="guide.howItWorks.scraper"></li>
+          <li data-i18n="guide.howItWorks.alarms"></li>
+          <li data-i18n="guide.howItWorks.digest"></li>
+        </ul>
+      </div>
+      <div class="guide-section">
+        <h3 data-i18n="guide.faq.heading">FAQ</h3>
+        <dl class="guide-defs">
+          <dt data-i18n="guide.faq.q1"></dt>
+          <dd data-i18n="guide.faq.a1"></dd>
+          <dt data-i18n="guide.faq.q2"></dt>
+          <dd data-i18n="guide.faq.a2"></dd>
+          <dt data-i18n="guide.faq.q3"></dt>
+          <dd data-i18n="guide.faq.a3"></dd>
+        </dl>
+      </div>
     </section>
   </div>
 
+  <script src="../src/i18n.js"></script>
   <script src="../src/event-store.js"></script>
   <script src="../src/notifier.js"></script>
   <script src="popup.js"></script>
