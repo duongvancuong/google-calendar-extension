@@ -3,6 +3,7 @@ global.chrome = {
     query: jest.fn(() => Promise.resolve([])),
     update: jest.fn(() => Promise.resolve()),
     remove: jest.fn(() => Promise.resolve()),
+    discard: jest.fn(() => Promise.resolve()),
     onActivated: { addListener: jest.fn() },
     onRemoved: { addListener: jest.fn() },
   },
