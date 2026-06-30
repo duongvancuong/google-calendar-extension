@@ -13,8 +13,8 @@ all windows. Manifest V3, vanilla JS, retro terminal theme, VI/EN.
 ## Use
 
 - Type to fuzzy-filter tabs by title or hostname.
-- `↑ / ↓` (or `Ctrl+P / Ctrl+N`) move; `Enter` jump; `Ctrl+Backspace` / `Delete`
-  close the highlighted tab; `Esc` dismiss.
+- `↑ / ↓` (or `Ctrl+P / Ctrl+N`) move; `Enter` jump; `Ctrl+Backspace` closes the
+  highlighted tab anytime; `Delete` closes it when the search field is empty; `Esc` dismiss.
 - With no query, tabs are ordered most-recently-used; the previous tab is
   pre-selected, so `Ctrl+Shift+Space` then `Enter` ≈ Alt+Tab for tabs.
 

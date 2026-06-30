@@ -91,7 +91,10 @@
     } else if (e.key === 'Enter') {
       e.preventDefault();
       jump();
-    } else if (e.key === 'Delete' || (e.ctrlKey && e.key === 'Backspace')) {
+    } else if (e.ctrlKey && e.key === 'Backspace') {
+      e.preventDefault();
+      closeSelected();
+    } else if (e.key === 'Delete' && els.search.value === '') {
       e.preventDefault();
       closeSelected();
     } else if (e.key === 'Escape') {
