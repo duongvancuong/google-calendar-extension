@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tab Palette</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="palette">
+    <div class="search-bar">
+      <span class="prompt">&gt;</span>
+      <input id="search" type="text" autocomplete="off" spellcheck="false"
+             data-i18n-placeholder="search.placeholder" />
+      <button id="lang-toggle" class="lang-toggle" data-i18n="lang.toggle">EN</button>
+    </div>
+    <ul id="results" class="results" role="listbox"></ul>
+    <p id="empty" class="empty-state" data-i18n="empty.noTabs" hidden></p>
+    <div class="hints">
+      <span data-i18n="hint.nav">↑↓ move</span>
+      <span data-i18n="hint.jump">⏎ switch</span>
+      <span data-i18n="hint.close">Ctrl+⌫ close</span>
+      <span data-i18n="hint.esc">Esc</span>
+    </div>
+  </div>
+
+  <script src="../src/i18n.js"></script>
+  <script src="../src/mru-store.js"></script>
+  <script src="../src/fuzzy.js"></script>
+  <script src="../src/selection.js"></script>
+  <script src="../src/session-store.js"></script>
+  <script src="../src/tab-source.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

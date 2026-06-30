@@ -1,0 +1,106 @@
+/* popup/popup.css — retro terminal / CRT theme */
+
+:root {
+  --bg-main: #0a0e0a;
+  --bg-panel: #121812;
+  --phosphor: #00ff66;
+  --phosphor-dim: #4a9e6a;
+  --amber: #ffb000;
+  --red: #ff5555;
+  --border: #2a3a2a;
+  --border-bright: #4a9e6a;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'IBM Plex Mono', 'SF Mono', Consolas, 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  width: 460px;
+  background: var(--bg-main);
+  color: var(--phosphor);
+}
+
+.palette { display: flex; flex-direction: column; max-height: 480px; }
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+
+.prompt { color: var(--amber); font-weight: 700; }
+
+#search {
+  flex: 1;
+  border: none;
+  background: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--phosphor);
+}
+#search::placeholder { color: var(--phosphor-dim); }
+
+.lang-toggle {
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--phosphor-dim);
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 3px 7px;
+  cursor: pointer;
+}
+.lang-toggle:hover { color: var(--phosphor); border-color: var(--border-bright); }
+
+.results { list-style: none; overflow-y: auto; max-height: 380px; }
+
+.row {
+  display: flex;
+  flex-direction: column;
+  padding: 7px 14px;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.row.selected {
+  background: var(--bg-panel);
+  border-left-color: var(--phosphor);
+}
+.row-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.row-host {
+  color: var(--phosphor-dim);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.row mark {
+  background: none;
+  color: var(--amber);
+  font-weight: 700;
+}
+
+.empty-state {
+  padding: 24px 14px;
+  text-align: center;
+  color: var(--phosphor-dim);
+}
+
+.hints {
+  display: flex;
+  gap: 14px;
+  padding: 7px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--phosphor-dim);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
