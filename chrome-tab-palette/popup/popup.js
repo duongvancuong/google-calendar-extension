@@ -30,7 +30,10 @@
     const frag = document.createDocumentFragment();
     state.rows.forEach((row, i) => {
       const li = document.createElement('li');
-      li.className = 'row' + (i === state.selected ? ' selected' : '');
+      li.className =
+        'row' +
+        (i === state.selected ? ' selected' : '') +
+        (row.item.discarded ? ' discarded' : '');
       li.dataset.index = String(i);
       li.setAttribute('role', 'option');
 
@@ -79,6 +82,23 @@
     }
   }
 
+  async function discardSelected() {
+    const row = state.rows[state.selected];
+    if (!row) return;
+    if (row.item.active || row.item.discarded) return; // active tabs can't be discarded; already-discarded is a no-op
+    try {
+      await TabSource.discardTab(row.item.id);
+      state.tabs = state.tabs.map((t) =>
+        t.id === row.item.id ? { ...t, discarded: true } : t
+      );
+      render();
+      els.search.focus();
+    } catch (e) {
+      console.error('[tab-palette] discard failed', e);
+      await reload();
+    }
+  }
+
   function onKeyDown(e) {
     if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'n')) {
       e.preventDefault();
@@ -91,6 +111,9 @@
     } else if (e.key === 'Enter') {
       e.preventDefault();
       jump();
+    } else if (e.ctrlKey && e.shiftKey && e.key === 'Backspace') {
+      e.preventDefault();
+      discardSelected();
     } else if (e.ctrlKey && e.key === 'Backspace') {
       e.preventDefault();
       closeSelected();

@@ -87,6 +87,13 @@ body {
   color: var(--amber);
   font-weight: 700;
 }
+.row.discarded { opacity: 0.55; }
+.row.discarded .row-title::before {
+  content: '·zZ ';
+  color: var(--amber);
+  font-weight: 700;
+  opacity: 0.9;
+}
 
 .empty-state {
   padding: 24px 14px;
@@ -96,7 +103,9 @@ body {
 
 .hints {
   display: flex;
+  flex-wrap: wrap;
   gap: 14px;
+  row-gap: 4px;
   padding: 7px 12px;
   border-top: 1px solid var(--border);
   background: var(--bg-panel);

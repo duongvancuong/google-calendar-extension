@@ -38,3 +38,20 @@ describe('TabSource.closeTab', () => {
     expect(chrome.tabs.remove).toHaveBeenCalledWith(4);
   });
 });
+
+describe('TabSource.discardTab', () => {
+  it('discards the tab by id', async () => {
+    await TabSource.discardTab(8);
+    expect(chrome.tabs.discard).toHaveBeenCalledWith(8);
+  });
+});
+
+describe('TabSource.normalizeTab discarded', () => {
+  it('maps discarded true', () => {
+    expect(TabSource.normalizeTab({ id: 1, discarded: true }).discarded).toBe(true);
+  });
+
+  it('defaults discarded to false when missing', () => {
+    expect(TabSource.normalizeTab({ id: 1 }).discarded).toBe(false);
+  });
+});

@@ -21,6 +21,7 @@
       favIconUrl: r.favIconUrl || '',
       lastAccessed: r.lastAccessed || 0,
       active: Boolean(r.active),
+      discarded: Boolean(r.discarded),
     };
   }
 
@@ -43,7 +44,11 @@
     await chrome.tabs.remove(id);
   }
 
-  const TabSource = { normalizeTab, queryTabs, getCurrentTab, activateTab, closeTab };
+  async function discardTab(id) {
+    await chrome.tabs.discard(id);
+  }
+
+  const TabSource = { normalizeTab, queryTabs, getCurrentTab, activateTab, closeTab, discardTab };
 
   if (typeof module !== 'undefined') module.exports = TabSource;
   else globalThis.TabSource = TabSource;
