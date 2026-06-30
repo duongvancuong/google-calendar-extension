@@ -98,3 +98,13 @@ describe('I18n', () => {
     expect(() => I18n.applyToDOM(null)).not.toThrow();
   });
 });
+
+describe('I18n hint.discard', () => {
+  it('exists in both languages', () => {
+    const I18n = loadI18n();
+    I18n._setLangSync('vi');
+    expect(I18n.t('hint.discard')).not.toBe('hint.discard'); // not the fallback key
+    I18n._setLangSync('en');
+    expect(I18n.t('hint.discard')).toMatch(/discard/i);
+  });
+});
