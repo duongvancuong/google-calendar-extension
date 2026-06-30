@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Palette",
+  "version": "1.0.0",
+  "description": "Keyboard command palette to fuzzy-search and switch tabs fast. MRU order, VI/EN, retro terminal.",
+  "author": "duongvancuong",
+  "permissions": ["tabs", "storage"],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Tab Palette"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+K",
+        "mac": "Command+Shift+K"
+      },
+      "description": "Open the tab palette"
+    }
+  }
+}
