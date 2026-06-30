@@ -1,0 +1,40 @@
+const TabSource = require('../src/tab-source');
+
+describe('TabSource.normalizeTab', () => {
+  it('extracts hostname from the url', () => {
+    const n = TabSource.normalizeTab({ id: 1, windowId: 2, title: 'X', url: 'https://github.com/a/b' });
+    expect(n.hostname).toBe('github.com');
+  });
+
+  it('falls back to empty hostname for an unparseable url', () => {
+    const n = TabSource.normalizeTab({ id: 1, url: 'not a url' });
+    expect(n.hostname).toBe('');
+    expect(n.title).toBe('');
+  });
+});
+
+describe('TabSource.queryTabs', () => {
+  it('maps chrome.tabs.query results through normalizeTab', async () => {
+    chrome.tabs.query.mockResolvedValue([
+      { id: 1, windowId: 9, title: 'GitHub', url: 'https://github.com/', lastAccessed: 5 },
+    ]);
+    const tabs = await TabSource.queryTabs();
+    expect(chrome.tabs.query).toHaveBeenCalledWith({});
+    expect(tabs[0]).toMatchObject({ id: 1, windowId: 9, hostname: 'github.com', lastAccessed: 5 });
+  });
+});
+
+describe('TabSource.activateTab', () => {
+  it('activates the tab and focuses its window', async () => {
+    await TabSource.activateTab({ id: 7, windowId: 3 });
+    expect(chrome.tabs.update).toHaveBeenCalledWith(7, { active: true });
+    expect(chrome.windows.update).toHaveBeenCalledWith(3, { focused: true });
+  });
+});
+
+describe('TabSource.closeTab', () => {
+  it('removes the tab by id', async () => {
+    await TabSource.closeTab(4);
+    expect(chrome.tabs.remove).toHaveBeenCalledWith(4);
+  });
+});
