@@ -66,7 +66,7 @@ describe('I18n', () => {
     chrome.storage.local.get.mockImplementation((key, cb) => cb({}));
     await I18n.init();
     // detectDefaultLang returns 'en' in node (no navigator.language starting with vi)
-    expect(['vi', 'en']).toContain(I18n.getLang());
+    expect(I18n.getLang()).toBe('en');
   });
 
   it('applyToDOM sets textContent for data-i18n elements', () => {
