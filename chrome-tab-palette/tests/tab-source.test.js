@@ -55,3 +55,25 @@ describe('TabSource.normalizeTab discarded', () => {
     expect(TabSource.normalizeTab({ id: 1 }).discarded).toBe(false);
   });
 });
+
+describe('TabSource.normalizeTab pinned', () => {
+  it('maps pinned true', () => {
+    expect(TabSource.normalizeTab({ id: 1, pinned: true }).pinned).toBe(true);
+  });
+
+  it('defaults pinned to false when missing', () => {
+    expect(TabSource.normalizeTab({ id: 1 }).pinned).toBe(false);
+  });
+});
+
+describe('TabSource.closeTabs', () => {
+  it('removes multiple tabs by id array', async () => {
+    await TabSource.closeTabs([2, 3, 4]);
+    expect(chrome.tabs.remove).toHaveBeenCalledWith([2, 3, 4]);
+  });
+
+  it('is a no-op for an empty array', async () => {
+    await TabSource.closeTabs([]);
+    expect(chrome.tabs.remove).not.toHaveBeenCalled();
+  });
+});
