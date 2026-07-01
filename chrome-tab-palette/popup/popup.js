@@ -139,7 +139,7 @@
 
   function onKeyDown(e) {
     if (state.confirmClose) {
-      if ((e.ctrlKey && e.altKey && e.key === 'Backspace') || e.key === 'Enter') {
+      if ((e.ctrlKey && e.shiftKey && (e.key === 'd' || e.key === 'D')) || e.key === 'Enter') {
         e.preventDefault();
         closeOthers();
         return;
@@ -177,7 +177,7 @@
     } else if (e.ctrlKey && e.shiftKey && e.key === 'Backspace') {
       e.preventDefault();
       discardSelected();
-    } else if (e.ctrlKey && e.altKey && e.key === 'Backspace') {
+    } else if (e.ctrlKey && e.shiftKey && (e.key === 'd' || e.key === 'D')) {
       e.preventDefault();
       closeOthers();
     } else if (e.ctrlKey && e.key === 'Backspace') {
