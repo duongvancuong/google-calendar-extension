@@ -108,3 +108,13 @@ describe('I18n hint.discard', () => {
     expect(I18n.t('hint.discard')).toMatch(/discard/i);
   });
 });
+
+describe('I18n discard-others string', () => {
+  it('hint.discardOthers exists in both languages', () => {
+    const I18n = loadI18n();
+    I18n._setLangSync('vi');
+    expect(I18n.t('hint.discardOthers')).toBe('Ctrl+⇧D giải phóng tab khác');
+    I18n._setLangSync('en');
+    expect(I18n.t('hint.discardOthers')).toBe('Ctrl+⇧D discard others');
+  });
+});

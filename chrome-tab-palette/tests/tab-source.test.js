@@ -55,3 +55,26 @@ describe('TabSource.normalizeTab discarded', () => {
     expect(TabSource.normalizeTab({ id: 1 }).discarded).toBe(false);
   });
 });
+
+describe('TabSource.discardTabs', () => {
+  it('discards each tab id', async () => {
+    await TabSource.discardTabs([2, 3, 4]);
+    expect(chrome.tabs.discard).toHaveBeenCalledWith(2);
+    expect(chrome.tabs.discard).toHaveBeenCalledWith(3);
+    expect(chrome.tabs.discard).toHaveBeenCalledWith(4);
+    expect(chrome.tabs.discard).toHaveBeenCalledTimes(3);
+  });
+
+  it('is a no-op for an empty array', async () => {
+    await TabSource.discardTabs([]);
+    expect(chrome.tabs.discard).not.toHaveBeenCalled();
+  });
+
+  it('tolerates individual discard failures', async () => {
+    chrome.tabs.discard
+      .mockRejectedValueOnce(new Error('cannot discard'))
+      .mockResolvedValueOnce();
+    await expect(TabSource.discardTabs([2, 3])).resolves.toBeUndefined();
+    expect(chrome.tabs.discard).toHaveBeenCalledTimes(2);
+  });
+});

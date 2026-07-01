@@ -9,7 +9,7 @@
     langToggle: document.getElementById('lang-toggle'),
   };
 
-  const state = { tabs: [], rows: [], selected: 0, query: '' };
+  const state = { tabs: [], rows: [], selected: 0, query: '', current: null };
 
   function computeRows() {
     state.rows = Fuzzy.rank(state.query, state.tabs);
@@ -99,6 +99,18 @@
     }
   }
 
+  async function discardOthers() {
+    const ids = BulkDiscard.discardableTabIds(state.tabs, state.current);
+    if (ids.length === 0) return; // nothing to end task
+    try {
+      await TabSource.discardTabs(ids);
+    } catch (e) {
+      console.error('[tab-palette] discard others failed', e);
+    }
+    await reload(); // reflect the freshly-discarded state (glyph on each row)
+    els.search.focus();
+  }
+
   function onKeyDown(e) {
     if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'n')) {
       e.preventDefault();
@@ -114,6 +126,9 @@
     } else if (e.ctrlKey && e.shiftKey && e.key === 'Backspace') {
       e.preventDefault();
       discardSelected();
+    } else if (e.ctrlKey && e.shiftKey && (e.key === 'd' || e.key === 'D')) {
+      e.preventDefault();
+      discardOthers();
     } else if (e.ctrlKey && e.key === 'Backspace') {
       e.preventDefault();
       closeSelected();
@@ -153,6 +168,7 @@
       SessionStore.loadMru(),
     ]);
     const others = all.filter((t) => !current || t.id !== current.id);
+    state.current = current;
     state.tabs = MruStore.orderTabs(mru, others);
     render();
   }
