@@ -108,3 +108,21 @@ describe('I18n hint.discard', () => {
     expect(I18n.t('hint.discard')).toMatch(/discard/i);
   });
 });
+
+describe('I18n close-others strings', () => {
+  it('hint.closeOthers exists in both languages', () => {
+    const I18n = loadI18n();
+    I18n._setLangSync('vi');
+    expect(I18n.t('hint.closeOthers')).not.toBe('hint.closeOthers'); // not the fallback key
+    I18n._setLangSync('en');
+    expect(I18n.t('hint.closeOthers')).toMatch(/close|others/i);
+  });
+
+  it('confirm.closeOthers has a %d placeholder in both languages', () => {
+    const I18n = loadI18n();
+    I18n._setLangSync('vi');
+    expect(I18n.t('confirm.closeOthers')).toContain('%d');
+    I18n._setLangSync('en');
+    expect(I18n.t('confirm.closeOthers')).toContain('%d');
+  });
+});
