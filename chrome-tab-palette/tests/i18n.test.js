@@ -113,9 +113,9 @@ describe('I18n close-others strings', () => {
   it('hint.closeOthers exists in both languages', () => {
     const I18n = loadI18n();
     I18n._setLangSync('vi');
-    expect(I18n.t('hint.closeOthers')).not.toBe('hint.closeOthers'); // not the fallback key
+    expect(I18n.t('hint.closeOthers')).toBe('Ctrl+⌥⌫ đóng tab khác');
     I18n._setLangSync('en');
-    expect(I18n.t('hint.closeOthers')).toMatch(/close|others/i);
+    expect(I18n.t('hint.closeOthers')).toBe('Ctrl+⌥⌫ close others');
   });
 
   it('confirm.closeOthers has a %d placeholder in both languages', () => {

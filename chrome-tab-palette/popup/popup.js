@@ -151,9 +151,16 @@
         els.search.focus();
         return;
       }
-      // any other key cancels the armed state, then falls through to normal handling
+      // any other key cancels the armed state
       disarmCloseOthers();
       render();
+      // don't let the cancel keystroke also fire a destructive single-tab action
+      // (Ctrl+Backspace / Ctrl+Shift+Backspace close/discard; Delete on empty search closes)
+      if ((e.ctrlKey && e.key === 'Backspace') || (e.key === 'Delete' && els.search.value === '')) {
+        e.preventDefault();
+        els.search.focus();
+        return;
+      }
     }
 
     if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'n')) {
