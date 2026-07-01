@@ -56,24 +56,25 @@ describe('TabSource.normalizeTab discarded', () => {
   });
 });
 
-describe('TabSource.normalizeTab pinned', () => {
-  it('maps pinned true', () => {
-    expect(TabSource.normalizeTab({ id: 1, pinned: true }).pinned).toBe(true);
-  });
-
-  it('defaults pinned to false when missing', () => {
-    expect(TabSource.normalizeTab({ id: 1 }).pinned).toBe(false);
-  });
-});
-
-describe('TabSource.closeTabs', () => {
-  it('removes multiple tabs by id array', async () => {
-    await TabSource.closeTabs([2, 3, 4]);
-    expect(chrome.tabs.remove).toHaveBeenCalledWith([2, 3, 4]);
+describe('TabSource.discardTabs', () => {
+  it('discards each tab id', async () => {
+    await TabSource.discardTabs([2, 3, 4]);
+    expect(chrome.tabs.discard).toHaveBeenCalledWith(2);
+    expect(chrome.tabs.discard).toHaveBeenCalledWith(3);
+    expect(chrome.tabs.discard).toHaveBeenCalledWith(4);
+    expect(chrome.tabs.discard).toHaveBeenCalledTimes(3);
   });
 
   it('is a no-op for an empty array', async () => {
-    await TabSource.closeTabs([]);
-    expect(chrome.tabs.remove).not.toHaveBeenCalled();
+    await TabSource.discardTabs([]);
+    expect(chrome.tabs.discard).not.toHaveBeenCalled();
+  });
+
+  it('tolerates individual discard failures', async () => {
+    chrome.tabs.discard
+      .mockRejectedValueOnce(new Error('cannot discard'))
+      .mockResolvedValueOnce();
+    await expect(TabSource.discardTabs([2, 3])).resolves.toBeUndefined();
+    expect(chrome.tabs.discard).toHaveBeenCalledTimes(2);
   });
 });

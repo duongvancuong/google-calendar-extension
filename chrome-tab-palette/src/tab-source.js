@@ -22,7 +22,6 @@
       lastAccessed: r.lastAccessed || 0,
       active: Boolean(r.active),
       discarded: Boolean(r.discarded),
-      pinned: Boolean(r.pinned),
     };
   }
 
@@ -45,16 +44,18 @@
     await chrome.tabs.remove(id);
   }
 
-  async function closeTabs(ids) {
-    if (!ids || ids.length === 0) return;
-    await chrome.tabs.remove(ids);
-  }
-
   async function discardTab(id) {
     await chrome.tabs.discard(id);
   }
 
-  const TabSource = { normalizeTab, queryTabs, getCurrentTab, activateTab, closeTab, closeTabs, discardTab };
+  // chrome.tabs.discard takes a single id (no array form), so discard each.
+  // Tolerate per-tab failures (e.g. a tab that refuses to discard).
+  async function discardTabs(ids) {
+    if (!ids || ids.length === 0) return;
+    await Promise.allSettled(ids.map((id) => chrome.tabs.discard(id)));
+  }
+
+  const TabSource = { normalizeTab, queryTabs, getCurrentTab, activateTab, closeTab, discardTab, discardTabs };
 
   if (typeof module !== 'undefined') module.exports = TabSource;
   else globalThis.TabSource = TabSource;

@@ -109,20 +109,12 @@ describe('I18n hint.discard', () => {
   });
 });
 
-describe('I18n close-others strings', () => {
-  it('hint.closeOthers exists in both languages', () => {
+describe('I18n discard-others string', () => {
+  it('hint.discardOthers exists in both languages', () => {
     const I18n = loadI18n();
     I18n._setLangSync('vi');
-    expect(I18n.t('hint.closeOthers')).toBe('Ctrl+⇧D đóng tab khác');
+    expect(I18n.t('hint.discardOthers')).toBe('Ctrl+⇧D giải phóng tab khác');
     I18n._setLangSync('en');
-    expect(I18n.t('hint.closeOthers')).toBe('Ctrl+⇧D close others');
-  });
-
-  it('confirm.closeOthers has a %d placeholder in both languages', () => {
-    const I18n = loadI18n();
-    I18n._setLangSync('vi');
-    expect(I18n.t('confirm.closeOthers')).toContain('%d');
-    I18n._setLangSync('en');
-    expect(I18n.t('confirm.closeOthers')).toContain('%d');
+    expect(I18n.t('hint.discardOthers')).toBe('Ctrl+⇧D discard others');
   });
 });

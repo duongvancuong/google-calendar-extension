@@ -6,11 +6,10 @@
     search: document.getElementById('search'),
     results: document.getElementById('results'),
     empty: document.getElementById('empty'),
-    confirmBar: document.getElementById('confirm-bar'),
     langToggle: document.getElementById('lang-toggle'),
   };
 
-  const state = { tabs: [], rows: [], selected: 0, query: '', current: null, confirmClose: false, pendingCount: 0 };
+  const state = { tabs: [], rows: [], selected: 0, query: '', current: null };
 
   function computeRows() {
     state.rows = Fuzzy.rank(state.query, state.tabs);
@@ -19,10 +18,6 @@
 
   function render() {
     computeRows();
-    els.confirmBar.hidden = !state.confirmClose;
-    if (state.confirmClose) {
-      els.confirmBar.textContent = I18n.t('confirm.closeOthers').replace('%d', String(state.pendingCount));
-    }
     els.results.innerHTML = '';
 
     if (state.rows.length === 0) {
@@ -104,65 +99,19 @@
     }
   }
 
-  function disarmCloseOthers() {
-    state.confirmClose = false;
-    state.pendingCount = 0;
-  }
-
-  function closeOthers() {
-    const ids = BulkClose.closableTabIds(state.tabs, state.current);
-    if (ids.length === 0) {
-      disarmCloseOthers();
-      render();
-      return;
-    }
-    if (!state.confirmClose) {
-      state.confirmClose = true;
-      state.pendingCount = ids.length;
-      render();
-      els.search.focus();
-      return;
-    }
-    executeCloseOthers(ids);
-  }
-
-  async function executeCloseOthers(ids) {
-    disarmCloseOthers();
+  async function discardOthers() {
+    const ids = BulkDiscard.discardableTabIds(state.tabs, state.current);
+    if (ids.length === 0) return; // nothing to end task
     try {
-      await TabSource.closeTabs(ids);
+      await TabSource.discardTabs(ids);
     } catch (e) {
-      console.error('[tab-palette] close others failed', e);
+      console.error('[tab-palette] discard others failed', e);
     }
-    await reload();
+    await reload(); // reflect the freshly-discarded state (glyph on each row)
     els.search.focus();
   }
 
   function onKeyDown(e) {
-    if (state.confirmClose) {
-      if ((e.ctrlKey && e.shiftKey && (e.key === 'd' || e.key === 'D')) || e.key === 'Enter') {
-        e.preventDefault();
-        closeOthers();
-        return;
-      }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        disarmCloseOthers();
-        render();
-        els.search.focus();
-        return;
-      }
-      // any other key cancels the armed state
-      disarmCloseOthers();
-      render();
-      // don't let the cancel keystroke also fire a destructive single-tab action
-      // (Ctrl+Backspace / Ctrl+Shift+Backspace close/discard; Delete on empty search closes)
-      if ((e.ctrlKey && e.key === 'Backspace') || (e.key === 'Delete' && els.search.value === '')) {
-        e.preventDefault();
-        els.search.focus();
-        return;
-      }
-    }
-
     if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'n')) {
       e.preventDefault();
       state.selected = Selection.move(state.selected, 1, state.rows.length);
@@ -179,7 +128,7 @@
       discardSelected();
     } else if (e.ctrlKey && e.shiftKey && (e.key === 'd' || e.key === 'D')) {
       e.preventDefault();
-      closeOthers();
+      discardOthers();
     } else if (e.ctrlKey && e.key === 'Backspace') {
       e.preventDefault();
       closeSelected();
@@ -221,7 +170,6 @@
     const others = all.filter((t) => !current || t.id !== current.id);
     state.current = current;
     state.tabs = MruStore.orderTabs(mru, others);
-    disarmCloseOthers();
     render();
   }
 
