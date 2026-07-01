@@ -6,10 +6,11 @@
     search: document.getElementById('search'),
     results: document.getElementById('results'),
     empty: document.getElementById('empty'),
+    confirmBar: document.getElementById('confirm-bar'),
     langToggle: document.getElementById('lang-toggle'),
   };
 
-  const state = { tabs: [], rows: [], selected: 0, query: '' };
+  const state = { tabs: [], rows: [], selected: 0, query: '', current: null, confirmClose: false, pendingCount: 0 };
 
   function computeRows() {
     state.rows = Fuzzy.rank(state.query, state.tabs);
@@ -18,6 +19,10 @@
 
   function render() {
     computeRows();
+    els.confirmBar.hidden = !state.confirmClose;
+    if (state.confirmClose) {
+      els.confirmBar.textContent = I18n.t('confirm.closeOthers').replace('%d', String(state.pendingCount));
+    }
     els.results.innerHTML = '';
 
     if (state.rows.length === 0) {
@@ -99,7 +104,58 @@
     }
   }
 
+  function disarmCloseOthers() {
+    state.confirmClose = false;
+    state.pendingCount = 0;
+  }
+
+  function closeOthers() {
+    const ids = BulkClose.closableTabIds(state.tabs, state.current);
+    if (ids.length === 0) {
+      disarmCloseOthers();
+      render();
+      return;
+    }
+    if (!state.confirmClose) {
+      state.confirmClose = true;
+      state.pendingCount = ids.length;
+      render();
+      els.search.focus();
+      return;
+    }
+    executeCloseOthers(ids);
+  }
+
+  async function executeCloseOthers(ids) {
+    disarmCloseOthers();
+    try {
+      await TabSource.closeTabs(ids);
+    } catch (e) {
+      console.error('[tab-palette] close others failed', e);
+    }
+    await reload();
+    els.search.focus();
+  }
+
   function onKeyDown(e) {
+    if (state.confirmClose) {
+      if ((e.ctrlKey && e.altKey && e.key === 'Backspace') || e.key === 'Enter') {
+        e.preventDefault();
+        closeOthers();
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        disarmCloseOthers();
+        render();
+        els.search.focus();
+        return;
+      }
+      // any other key cancels the armed state, then falls through to normal handling
+      disarmCloseOthers();
+      render();
+    }
+
     if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'n')) {
       e.preventDefault();
       state.selected = Selection.move(state.selected, 1, state.rows.length);
@@ -114,6 +170,9 @@
     } else if (e.ctrlKey && e.shiftKey && e.key === 'Backspace') {
       e.preventDefault();
       discardSelected();
+    } else if (e.ctrlKey && e.altKey && e.key === 'Backspace') {
+      e.preventDefault();
+      closeOthers();
     } else if (e.ctrlKey && e.key === 'Backspace') {
       e.preventDefault();
       closeSelected();
@@ -153,7 +212,9 @@
       SessionStore.loadMru(),
     ]);
     const others = all.filter((t) => !current || t.id !== current.id);
+    state.current = current;
     state.tabs = MruStore.orderTabs(mru, others);
+    disarmCloseOthers();
     render();
   }
 
