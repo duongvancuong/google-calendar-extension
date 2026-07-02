@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Keyboard command palette to fuzzy-search and switch tabs fast. MRU order, VI/EN, retro terminal.",
   "author": "duongvancuong",
-  "permissions": ["tabs", "storage"],
+  "permissions": ["tabs", "storage", "bookmarks"],
   "background": {
     "service_worker": "background/service-worker.js"
   },

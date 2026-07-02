@@ -9,10 +9,12 @@
     langToggle: document.getElementById('lang-toggle'),
   };
 
-  const state = { tabs: [], rows: [], selected: 0, query: '', current: null };
+  const state = { tabs: [], bookmarks: [], rows: [], selected: 0, query: '', current: null };
 
   function computeRows() {
-    state.rows = Fuzzy.rank(state.query, state.tabs);
+    const tabRows = Fuzzy.rank(state.query, state.tabs);
+    const bookmarkRows = Fuzzy.rank(state.query, state.bookmarks);
+    state.rows = ResultMerge.mergeResults(state.query, tabRows, bookmarkRows);
     if (state.selected >= state.rows.length) state.selected = 0;
   }
 
@@ -22,24 +24,34 @@
 
     if (state.rows.length === 0) {
       els.empty.hidden = false;
-      els.empty.textContent = I18n.t(state.tabs.length === 0 ? 'empty.noTabs' : 'empty.noMatch');
+      els.empty.textContent = I18n.t(state.query.trim() === '' ? 'empty.noTabs' : 'empty.noMatch');
       return;
     }
     els.empty.hidden = true;
 
     const frag = document.createDocumentFragment();
     state.rows.forEach((row, i) => {
+      const isBookmark = row.item.kind === 'bookmark';
       const li = document.createElement('li');
       li.className =
         'row' +
         (i === state.selected ? ' selected' : '') +
+        (isBookmark ? ' bookmark' : '') +
         (row.item.discarded ? ' discarded' : '');
       li.dataset.index = String(i);
       li.setAttribute('role', 'option');
 
       const title = document.createElement('div');
       title.className = 'row-title';
-      title.innerHTML = Fuzzy.highlight(row.item.title || row.item.url, row.titleRanges);
+      if (isBookmark) {
+        const badge = document.createElement('span');
+        badge.className = 'row-badge';
+        badge.textContent = '★';
+        title.appendChild(badge);
+      }
+      const titleText = document.createElement('span');
+      titleText.innerHTML = Fuzzy.highlight(row.item.title || row.item.url, row.titleRanges);
+      title.appendChild(titleText);
 
       const host = document.createElement('div');
       host.className = 'row-host';
@@ -59,10 +71,14 @@
     const row = state.rows[state.selected];
     if (!row) return;
     try {
-      await TabSource.activateTab(row.item);
+      if (row.item.kind === 'bookmark') {
+        await BookmarkSource.openBookmark(row.item.url);
+      } else {
+        await TabSource.activateTab(row.item);
+      }
       window.close();
     } catch (e) {
-      console.error('[tab-palette] activate failed', e);
+      console.error('[tab-palette] open failed', e);
       await reload();
     }
   }
@@ -70,6 +86,7 @@
   async function closeSelected() {
     const row = state.rows[state.selected];
     if (!row) return;
+    if (row.item.kind !== 'tab') return; // close applies to tabs only
     try {
       await TabSource.closeTab(row.item.id);
       state.tabs = MruStore.remove(state.tabs.map((t) => t.id), row.item.id)
@@ -85,6 +102,7 @@
   async function discardSelected() {
     const row = state.rows[state.selected];
     if (!row) return;
+    if (row.item.kind !== 'tab') return; // discard applies to tabs only
     if (row.item.active || row.item.discarded) return; // active tabs can't be discarded; already-discarded is a no-op
     try {
       await TabSource.discardTab(row.item.id);
@@ -162,14 +180,19 @@
   });
 
   async function reload() {
-    const [current, all, mru] = await Promise.all([
+    const [current, all, mru, bookmarks] = await Promise.all([
       TabSource.getCurrentTab(),
       TabSource.queryTabs(),
       SessionStore.loadMru(),
+      BookmarkSource.queryBookmarks().catch((e) => {
+        console.error('[tab-palette] bookmarks load failed', e);
+        return [];
+      }),
     ]);
     const others = all.filter((t) => !current || t.id !== current.id);
     state.current = current;
     state.tabs = MruStore.orderTabs(mru, others);
+    state.bookmarks = bookmarks;
     render();
   }
 
