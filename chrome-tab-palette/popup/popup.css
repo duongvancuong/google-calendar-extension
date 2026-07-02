@@ -94,6 +94,11 @@ body {
   font-weight: 700;
   opacity: 0.9;
 }
+.row-badge {
+  color: var(--amber);
+  font-weight: 700;
+  margin-right: 5px;
+}
 
 .empty-state {
   padding: 24px 14px;
