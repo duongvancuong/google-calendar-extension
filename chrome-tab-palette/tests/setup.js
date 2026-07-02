@@ -4,8 +4,12 @@ global.chrome = {
     update: jest.fn(() => Promise.resolve()),
     remove: jest.fn(() => Promise.resolve()),
     discard: jest.fn(() => Promise.resolve()),
+    create: jest.fn(() => Promise.resolve({})),
     onActivated: { addListener: jest.fn() },
     onRemoved: { addListener: jest.fn() },
+  },
+  bookmarks: {
+    getTree: jest.fn(() => Promise.resolve([])),
   },
   windows: {
     update: jest.fn(() => Promise.resolve()),

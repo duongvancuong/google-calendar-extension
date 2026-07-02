@@ -34,7 +34,16 @@
     return out;
   }
 
-  const BookmarkSource = { normalizeBookmark, flattenTree };
+  async function queryBookmarks() {
+    const tree = await chrome.bookmarks.getTree();
+    return flattenTree(tree);
+  }
+
+  async function openBookmark(url) {
+    await chrome.tabs.create({ url, active: true });
+  }
+
+  const BookmarkSource = { normalizeBookmark, flattenTree, queryBookmarks, openBookmark };
 
   if (typeof module !== 'undefined') module.exports = BookmarkSource;
   else globalThis.BookmarkSource = BookmarkSource;

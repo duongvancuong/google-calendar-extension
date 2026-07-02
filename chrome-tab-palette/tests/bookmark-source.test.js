@@ -50,3 +50,23 @@ describe('BookmarkSource.flattenTree', () => {
     expect(BookmarkSource.flattenTree(undefined)).toEqual([]);
   });
 });
+
+describe('BookmarkSource.queryBookmarks', () => {
+  it('flattens chrome.bookmarks.getTree into normalized bookmark items', async () => {
+    chrome.bookmarks.getTree.mockResolvedValue([
+      { id: '0', children: [{ id: '2', title: 'GitHub', url: 'https://github.com/' }] },
+    ]);
+    const items = await BookmarkSource.queryBookmarks();
+    expect(chrome.bookmarks.getTree).toHaveBeenCalled();
+    expect(items).toEqual([
+      { kind: 'bookmark', id: '2', title: 'GitHub', url: 'https://github.com/', hostname: 'github.com' },
+    ]);
+  });
+});
+
+describe('BookmarkSource.openBookmark', () => {
+  it('creates a new active tab for the url', async () => {
+    await BookmarkSource.openBookmark('https://example.com/');
+    expect(chrome.tabs.create).toHaveBeenCalledWith({ url: 'https://example.com/', active: true });
+  });
+});
