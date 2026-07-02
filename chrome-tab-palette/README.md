@@ -19,6 +19,8 @@ all windows. Manifest V3, vanilla JS, retro terminal theme, VI/EN.
   highlighted tab anytime; `Delete` closes it when the search field is empty; `Esc` dismiss.
 - With no query, tabs are ordered most-recently-used; the previous tab is
   pre-selected, so the hotkey then `Enter` ≈ Alt+Tab for tabs.
+- Once you start typing, matching **bookmarks** appear below matching tabs (marked
+  with `★`); `Enter` on a bookmark opens it in a new tab.
 
 ## Develop
 
@@ -28,5 +30,6 @@ all windows. Manifest V3, vanilla JS, retro terminal theme, VI/EN.
 
 ## Permissions
 
-`tabs` (read titles/URLs, activate, close) and `storage` (MRU order + language).
-No host permissions, no content scripts — works on every page incl. `chrome://`.
+`tabs` (read titles/URLs, activate, close), `storage` (MRU order + language), and
+`bookmarks` (read bookmarks to search and open them). No host permissions, no
+content scripts — works on every page incl. `chrome://`.
