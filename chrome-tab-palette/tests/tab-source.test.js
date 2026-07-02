@@ -56,6 +56,12 @@ describe('TabSource.normalizeTab discarded', () => {
   });
 });
 
+describe('TabSource.normalizeTab kind', () => {
+  it('tags normalized tabs with kind "tab"', () => {
+    expect(TabSource.normalizeTab({ id: 1 }).kind).toBe('tab');
+  });
+});
+
 describe('TabSource.discardTabs', () => {
   it('discards each tab id', async () => {
     await TabSource.discardTabs([2, 3, 4]);

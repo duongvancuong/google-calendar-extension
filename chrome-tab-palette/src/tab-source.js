@@ -13,6 +13,7 @@
   function normalizeTab(raw) {
     const r = raw || {};
     return {
+      kind: 'tab',
       id: r.id,
       windowId: r.windowId,
       title: r.title || '',
